@@ -1,0 +1,9 @@
+data/
+cache/
+.venv/
+.env
+runs/*/hyps.jsonl
+runs/*/per_utt.jsonl
+__pycache__/
+*.pyc
+syllabus/index/emb.npy

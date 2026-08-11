@@ -1,0 +1,15 @@
+faster-whisper==1.1.1
+ctranslate2>=4.5.0
+huggingface-hub>=0.26
+soundfile
+librosa
+numpy
+pandas
+pyyaml
+tqdm
+jiwer==3.0.4
+rapidfuzz
+sentence-transformers
+indic-transliteration
+groq
+python-dotenv

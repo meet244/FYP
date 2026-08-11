@@ -1,0 +1,32 @@
+# Frozen experiment settings. Anything changed here invalidates the ASR cache key.
+model:
+  backend: local
+  size: large-v3
+  compute_type: int8      # 16 GB machine; int8 keeps large-v3 comfortably in RAM
+  device: cpu             # CTranslate2 does not use the Apple Silicon GPU
+  cpu_threads: 0          # 0 = CTranslate2 default (all physical cores)
+
+decode:
+  language: hi            # fixed after the week-2 pilot (hi vs en vs auto)
+  beam_size: 5
+  temperature: 0.0
+  condition_on_previous_text: false
+  vad_filter: false
+
+data:
+  full_manifest: data/manifests/test.jsonl
+  subset_manifest: data/manifests/subset.jsonl   # 800 utts, seed 1337
+  dev_manifest: data/manifests/dev200.jsonl      # threshold / k tuning only
+  eval_manifest: data/manifests/eval600.jsonl
+  seed: 1337
+
+syllabus:
+  embed_model: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+  chunk_words: 120
+  chunk_overlap: 30
+  top_k: 3
+  prompt_max_words: 120   # keep under ~200 tokens for Groq parity
+
+correction:
+  fuzzy_threshold: 88     # tuned on dev200 only
+  llm_max_token_change: 0.20
