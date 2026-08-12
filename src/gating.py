@@ -103,30 +103,60 @@ def _load_run(tier: str, name: str) -> dict[str, dict]:
     return {r["utt_id"]: r for r in read_jsonl(p)}
 
 
-def compose_gated(base: dict[str, dict], grounded: dict[str, dict], conf: dict,
-                  threshold: float, rows: list[dict],
-                  correct_spans: bool = False, cfg=None,
-                  plan=None) -> tuple[list[dict], dict]:
-    """Select, per utterance, the unbiased or the grounded hypothesis.
+def select_flagged(conf: dict, rows: list[dict], mode: str = "percentile",
+                   value: float = 0.0) -> tuple[set[str], float | None]:
+    """Decide which utterances the grounding mechanism is allowed to touch.
 
-    threshold = 0.0 leaves everything unbiased (equals B0); threshold = 1.0 grounds
-    everything (equals the global mechanism). The interesting region is in between.
+    `percentile` mode flags the least-confident `value` percent of utterances by rank.
+    Rank selection is the only calibration-free way to gate: an absolute threshold on
+    Tier 1 flagged either nothing (<=0.6) or 19% (0.9), so the sweep could not trace a
+    trade-off curve at all. Rank also makes the endpoints exact — 0 grounds nothing and
+    reproduces B0, 100 grounds everything and reproduces the global mechanism — which is
+    what makes the frontier interpretable.
+
+    Utterances with no confidence signal are always flagged: no signal means no evidence
+    of confidence, and leaving them unbiased would be an unstated decision.
+
+    Returns (flagged utterance ids, the effective confidence cut-off if one exists).
     """
+    pairs = [(r["utt_id"], (conf.get(r["utt_id"]) or {}).get("conf")) for r in rows
+             if r["utt_id"] in conf]
+    unknown = {u for u, c in pairs if c is None}
+    known = sorted(((c, u) for u, c in pairs if c is not None))
+
+    if mode == "absolute":
+        return {u for c, u in known if c < value} | unknown, value
+    if mode != "percentile":
+        raise ValueError(f"unknown gating mode {mode!r}")
+
+    k = int(round(value / 100.0 * len(known)))
+    k = max(0, min(len(known), k))
+    return ({u for _, u in known[:k]} | unknown,
+            known[k - 1][0] if k > 0 else None)
+
+
+def compose_gated(base: dict[str, dict], grounded: dict[str, dict],
+                  flagged: set[str], rows: list[dict],
+                  correct_spans: bool = False, cfg=None, plan=None,
+                  conf: dict | None = None,
+                  label: dict | None = None) -> tuple[list[dict], dict]:
+    """Select, per utterance, the unbiased or the grounded hypothesis."""
+    conf = conf or {}
     out, n_flagged = [], 0
     for r in rows:
         u = r["utt_id"]
         b = base.get(u)
         if b is None:
             continue
-        c = (conf.get(u) or {}).get("conf")
-        flagged = (c is None) or (c < threshold)
-        row = dict(grounded[u] if (flagged and u in grounded) else b)
-        row["gate_conf"] = c
-        row["grounded"] = bool(flagged and u in grounded)
-        row["gate_threshold"] = threshold
-        n_flagged += bool(flagged)
+        is_flagged = u in flagged
+        row = dict(grounded[u] if (is_flagged and u in grounded) else b)
+        row["gate_conf"] = (conf.get(u) or {}).get("conf")
+        row["grounded"] = bool(is_flagged and u in grounded)
+        if label:
+            row.update(label)
+        n_flagged += bool(is_flagged)
 
-        if correct_spans and flagged and cfg is not None and plan is not None:
+        if correct_spans and is_flagged and cfg is not None and plan is not None:
             from correct_lexical import correct_utterance
             spans = (conf.get(u) or {}).get("spans") or []
             if spans:
@@ -140,18 +170,25 @@ def compose_gated(base: dict[str, dict], grounded: dict[str, dict], conf: dict,
                     row["hyp_before_correction"] = row["hyp"]
                     row["hyp"] = new
         out.append(row)
-    meta = {"threshold": threshold, "n_flagged": n_flagged,
+    meta = {"n_flagged": n_flagged,
             "flagged_rate": n_flagged / len(out) if out else 0.0}
     return out, meta
 
 
 def run_gated(cfg, rows: list[dict], tier: str, opts: dict):
     """Entry point used by conditions.run_condition for the `G` condition."""
-    mech = opts.get("gate_mechanism") or cfg["gating"]["mechanism"]
-    threshold = opts.get("gate_threshold")
-    if threshold is None:
-        threshold = cfg["gating"]["utt_conf_threshold"]
-    word_th = cfg["gating"]["word_conf_threshold"]
+    g = cfg["gating"]
+    mech = opts.get("gate_mechanism") or g["mechanism"]
+    mode = opts.get("gate_mode") or g.get("mode", "percentile")
+    if mode == "percentile":
+        value = opts.get("gate_percentile")
+        if value is None:
+            value = g.get("percentile", 40)
+    else:
+        value = opts.get("gate_threshold")
+        if value is None:
+            value = g["utt_conf_threshold"]
+    word_th = g["word_conf_threshold"]
     correct_spans = bool(opts.get("gate_correct_spans", False))
 
     base = _load_run(tier, "B0")
@@ -166,19 +203,33 @@ def run_gated(cfg, rows: list[dict], tier: str, opts: dict):
                              granularity=cfg["retrieval"]["granularity"],
                              k=cfg["retrieval"]["top_k"])
 
-    out, meta = compose_gated(base, grounded, conf, threshold, rows,
-                              correct_spans=correct_spans, cfg=cfg, plan=plan)
-    meta.update({"condition": "G", "mechanism": mech,
-                 "utt_conf_threshold": threshold, "word_conf_threshold": word_th,
+    flagged, cut = select_flagged(conf, rows, mode, value)
+    out, meta = compose_gated(base, grounded, flagged, rows,
+                              correct_spans=correct_spans, cfg=cfg, plan=plan,
+                              conf=conf,
+                              label={"gate_mode": mode, "gate_value": value})
+    meta.update({"condition": "G", "mechanism": mech, "gate_mode": mode,
+                 "gate_value": value, "effective_conf_cutoff": cut,
+                 "word_conf_threshold": word_th,
                  "span_restricted_correction": correct_spans,
+                 "decode_fraction": meta["flagged_rate"],
                  "decodes_paid_for": "cached M-condition decodes reused (§9.2)"})
     return out, meta, None
 
 
 # --- threshold sweep and trade-off frontier (§7.4) ---------------------------
 
-def sweep(cfg, tier: str, mechanism: str, thresholds: list[float],
-          correct_spans: bool = False) -> dict:
+def sweep(cfg, tier: str, mechanism: str, values: list[float],
+          correct_spans: bool = False, mode: str | None = None) -> dict:
+    """Trace the gating frontier by sweeping how much of the tier gets grounded.
+
+    Two things are being traded off and both are reported per point: the share of the
+    global mechanism's B-WER gain that is retained, and the share of utterances that had
+    to be re-decoded to get it. On this corpus global biasing turned out to carry almost
+    no U-WER penalty, so gating's contribution is the second axis — cost — rather than
+    the first. Reporting both keeps the claim honest whichever way the data falls.
+    """
+    mode = mode or cfg["gating"].get("mode", "percentile")
     rows = read_jsonl(manifest_for_tier(cfg, tier))
     lex = load_lexicon(cfg["scoring"]["lexicon"])
     base = _load_run(tier, "B0")
@@ -194,31 +245,61 @@ def sweep(cfg, tier: str, mechanism: str, thresholds: list[float],
                              k=cfg["retrieval"]["top_k"])
 
     points = []
-    for th in thresholds:
-        out, meta = compose_gated(base, grounded, conf, th, rows,
-                                  correct_spans=correct_spans, cfg=cfg, plan=plan)
-        m, _ = score_rows(out, lex)
-        points.append({"threshold": th, "flagged_rate": meta["flagged_rate"],
+    for v in values:
+        flagged, cut = select_flagged(conf, rows, mode, v)
+        out_rows, meta = compose_gated(base, grounded, flagged, rows,
+                                       correct_spans=correct_spans, cfg=cfg,
+                                       plan=plan, conf=conf)
+        m, _ = score_rows(out_rows, lex)
+        points.append({"value": v, "percentile": v if mode == "percentile" else None,
+                       "threshold": v, "mode": mode,
+                       "effective_conf_cutoff": cut,
+                       "flagged_rate": meta["flagged_rate"],
+                       "decode_fraction": meta["flagged_rate"],
                        "n_flagged": meta["n_flagged"],
                        "wer": m["wer"], "b_wer": m["b_wer"], "u_wer": m["u_wer"],
                        "term_f1": m["term_f1"], "term_recall": m["term_recall"],
                        "term_precision": m["term_precision"],
                        "wer_level2": m["wer_level2"]})
-        print(f"  th={th:<4} flagged={meta['flagged_rate']*100:5.1f}%  "
+        print(f"  {mode}={v:<5} grounded={meta['flagged_rate']*100:5.1f}%  "
               f"{summary_line(m)}", flush=True)
 
-    out = {"tier": tier, "mechanism": mechanism, "thresholds": thresholds,
+    res = {"tier": tier, "mechanism": mechanism, "mode": mode, "values": values,
            "span_restricted_correction": correct_spans, "points": points}
-    # Best threshold by the gating criterion: lowest B-WER subject to U-WER not
-    # exceeding the unbiased baseline's U-WER (that is what "at no cost" means).
-    b0 = next((p for p in points if p["threshold"] == 0.0), None)
-    if b0:
-        eligible = [p for p in points if p["u_wer"] <= b0["u_wer"] + 1e-9]
-        out["baseline_u_wer"] = b0["u_wer"]
-        out["chosen_threshold"] = (min(eligible, key=lambda p: p["b_wer"])["threshold"]
-                                  if eligible else None)
-    write_json(ROOT / "runs" / tier / f"G_sweep_{mechanism}.json", out)
-    return out
+
+    # Endpoints: nothing grounded (== B0) and everything grounded (== the mechanism).
+    lo = min(points, key=lambda p: p["flagged_rate"])
+    hi = max(points, key=lambda p: p["flagged_rate"])
+    gain_full = (lo["b_wer"] - hi["b_wer"]) if (lo["b_wer"] is not None
+                                               and hi["b_wer"] is not None) else None
+    retain = cfg["gating"].get("retain_target", 0.90)
+    res.update({"baseline_b_wer": lo["b_wer"], "baseline_u_wer": lo["u_wer"],
+                "global_b_wer": hi["b_wer"], "global_u_wer": hi["u_wer"],
+                "full_b_wer_gain": gain_full, "retain_target": retain})
+
+    for p in points:
+        p["retained_gain"] = ((lo["b_wer"] - p["b_wer"]) / gain_full
+                              if gain_full and gain_full > 1e-12 else None)
+
+    # Chosen operating point: the cheapest gate that keeps `retain_target` of the gain
+    # without letting U-WER drift above the more permissive of the two endpoints.
+    u_cap = max(lo["u_wer"], hi["u_wer"]) + 1e-9
+    eligible = [p for p in points
+                if p["retained_gain"] is not None and p["retained_gain"] >= retain
+                and p["u_wer"] <= u_cap]
+    chosen = min(eligible, key=lambda p: p["flagged_rate"]) if eligible else None
+    res["chosen"] = chosen
+    res["chosen_value"] = chosen["value"] if chosen else None
+    res["chosen_threshold"] = res["chosen_value"]          # back-compat for figures
+    res["statement_for_report"] = (
+        f"Gating {chosen['flagged_rate']*100:.0f}% of utterances retains "
+        f"{chosen['retained_gain']*100:.0f}% of the B-WER gain of grounding all of them"
+        if chosen else
+        "No gate retained the target share of the gain; grounding is not separable from "
+        "cost on this tier.")
+    write_json(ROOT / "runs" / tier / f"G_sweep_{mechanism}.json", res)
+    print("\n" + res["statement_for_report"])
+    return res
 
 
 def main():
@@ -227,15 +308,18 @@ def main():
     ap.add_argument("--tier", default="tier1")
     ap.add_argument("--mechanism", default=None)
     ap.add_argument("--sweep", action="store_true",
-                    help="sweep the confidence threshold and write the frontier")
+                    help="sweep the gate and write the trade-off frontier")
+    ap.add_argument("--mode", choices=["percentile", "absolute"], default=None)
     ap.add_argument("--correct-spans", action="store_true",
                     help="also restrict M3a correction to flagged spans")
     a = ap.parse_args()
     mech = a.mechanism or cfg["gating"]["mechanism"]
+    mode = a.mode or cfg["gating"].get("mode", "percentile")
     if a.sweep:
-        res = sweep(cfg, a.tier, mech, cfg["gating"]["sweep"], a.correct_spans)
-        print(f"\nchosen threshold (lowest B-WER with U-WER <= baseline): "
-              f"{res.get('chosen_threshold')}")
+        values = (cfg["gating"]["sweep_percentiles"] if mode == "percentile"
+                  else cfg["gating"]["sweep"])
+        res = sweep(cfg, a.tier, mech, values, a.correct_spans, mode=mode)
+        print(f"chosen {mode}: {res.get('chosen_value')}")
     else:
         from conditions import run_condition
         run_condition("G", a.tier, cfg, gate_mechanism=mech,

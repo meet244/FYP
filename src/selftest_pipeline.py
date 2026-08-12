@@ -207,14 +207,19 @@ def main() -> int:
           f"grounded_rate={m_g_partial.get('grounded_rate')}")
 
     from gating import sweep
-    sw = sweep(cfg, TIER, "M2", [0.0, 0.5, 0.9, 1.0])
-    pts = {p["threshold"]: p for p in sw["points"]}
-    check("gate threshold 0 reproduces the baseline exactly",
-          abs(pts[0.0]["wer"] - m_b0["wer"]) < 1e-12)
-    check("gate threshold 1 reproduces the global mechanism exactly",
-          abs(pts[1.0]["wer"] - m_m2["wer"]) < 1e-12)
-    check("sweep traces a monotone flagged rate",
-          pts[0.0]["flagged_rate"] <= pts[0.5]["flagged_rate"] <= pts[1.0]["flagged_rate"])
+    sw = sweep(cfg, TIER, "M2", [0, 20, 60, 100], mode="percentile")
+    pts = {p["value"]: p for p in sw["points"]}
+    check("gate at 0% reproduces the baseline exactly",
+          abs(pts[0]["wer"] - m_b0["wer"]) < 1e-12)
+    check("gate at 100% reproduces the global mechanism exactly",
+          abs(pts[100]["wer"] - m_m2["wer"]) < 1e-12)
+    check("sweep traces a monotone re-decode fraction",
+          pts[0]["flagged_rate"] <= pts[20]["flagged_rate"]
+          <= pts[60]["flagged_rate"] <= pts[100]["flagged_rate"])
+    check("percentile gate actually engages in between",
+          0 < pts[60]["flagged_rate"] < 1, f"{pts[60]['flagged_rate']:.2f}")
+    check("frontier reports the retained share of the gain",
+          pts[100].get("retained_gain") is not None)
 
     # --- statistics, report, figures --------------------------------------
     import bootstrap

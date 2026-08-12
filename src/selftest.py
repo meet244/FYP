@@ -158,24 +158,44 @@ def test_correct_lexical() -> None:
 
 
 def test_gating() -> None:
-    from gating import compose_gated
-    rows = [{"utt_id": "a"}, {"utt_id": "b"}]
-    base = {"a": {"utt_id": "a", "hyp": "base a", "ref": "r a"},
-            "b": {"utt_id": "b", "hyp": "base b", "ref": "r b"}}
-    grounded = {"a": {"utt_id": "a", "hyp": "grounded a", "ref": "r a"},
-                "b": {"utt_id": "b", "hyp": "grounded b", "ref": "r b"}}
-    conf = {"a": {"conf": 0.3, "spans": []}, "b": {"conf": 0.9, "spans": []}}
+    from gating import compose_gated, select_flagged
+    rows = [{"utt_id": "a"}, {"utt_id": "b"}, {"utt_id": "c"}, {"utt_id": "d"}]
+    base = {u: {"utt_id": u, "hyp": f"base {u}", "ref": f"r {u}"} for u in "abcd"}
+    grounded = {u: {"utt_id": u, "hyp": f"grounded {u}", "ref": f"r {u}"}
+                for u in "abcd"}
+    conf = {"a": {"conf": 0.30, "spans": []}, "b": {"conf": 0.55, "spans": []},
+            "c": {"conf": 0.80, "spans": []}, "d": {"conf": 0.95, "spans": []}}
 
-    out, meta = compose_gated(base, grounded, conf, 0.0, rows)
-    check("threshold 0 grounds nothing (equals B0)",
-          [r["hyp"] for r in out], ["base a", "base b"])
-    out, meta = compose_gated(base, grounded, conf, 1.0, rows)
-    check("threshold 1 grounds everything (equals the global mechanism)",
-          [r["hyp"] for r in out], ["grounded a", "grounded b"])
-    out, meta = compose_gated(base, grounded, conf, 0.6, rows)
-    check("intermediate threshold grounds only the low-confidence utterance",
-          [r["hyp"] for r in out], ["grounded a", "base b"])
-    close("flagged rate is reported", meta["flagged_rate"], 0.5)
+    def hyps(mode, value):
+        flagged, _ = select_flagged(conf, rows, mode, value)
+        out, meta = compose_gated(base, grounded, flagged, rows, conf=conf)
+        return [r["hyp"] for r in out], meta
+
+    h, _ = hyps("percentile", 0)
+    check("0th percentile grounds nothing (equals B0)",
+          h, [f"base {u}" for u in "abcd"])
+    h, _ = hyps("percentile", 100)
+    check("100th percentile grounds everything (equals the global mechanism)",
+          h, [f"grounded {u}" for u in "abcd"])
+    h, meta = hyps("percentile", 50)
+    check("50th percentile grounds the least-confident half",
+          h, ["grounded a", "grounded b", "base c", "base d"])
+    close("re-decode fraction is reported", meta["flagged_rate"], 0.5)
+
+    # Rank selection is what makes the gate calibration-free: an absolute threshold that
+    # sits below the whole distribution flags nothing, which is the failure observed on
+    # Tier 1 with large-v3.
+    h, _ = hyps("absolute", 0.20)
+    check("an absolute threshold below the distribution flags nothing",
+          h, [f"base {u}" for u in "abcd"])
+    h, _ = hyps("percentile", 25)
+    check("the same data still gates by rank", h[0], "grounded a")
+
+    # No confidence signal means no evidence of confidence: always gated.
+    conf_missing = dict(conf)
+    conf_missing["d"] = {"conf": None, "spans": []}
+    flagged, _ = select_flagged(conf_missing, rows, "percentile", 0)
+    check("utterances without a confidence signal are always gated", flagged, {"d"})
 
 
 def test_bootstrap() -> None:

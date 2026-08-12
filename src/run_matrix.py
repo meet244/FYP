@@ -86,6 +86,14 @@ def stage_tune(cfg, tier: str = "tier1") -> None:
     mech = cfg["gating"]["mechanism"]
     run_condition(mech, tier, cfg)
     _py("src/gating.py", "--tier", tier, "--sweep", "--mechanism", mech)
+    # Adopt the operating point the frontier chose, so G is reported at the setting the
+    # development tier selected rather than at a config default.
+    sw = ROOT / "runs" / tier / f"G_sweep_{mech}.json"
+    if sw.exists():
+        chosen = read_json(sw).get("chosen_value")
+        if chosen is not None:
+            run_condition("G", tier, cfg, gate_mechanism=mech,
+                          gate_percentile=chosen)
 
 
 def stage_matrix(cfg, tier: str, skip_m3b: bool = False) -> None:
@@ -109,6 +117,14 @@ def stage_matrix(cfg, tier: str, skip_m3b: bool = False) -> None:
     mech = cfg["gating"]["mechanism"]
     run_condition("G", tier, cfg, gate_mechanism=mech)
     _py("src/gating.py", "--tier", tier, "--sweep", "--mechanism", mech)
+    # Adopt the operating point the frontier chose, so G is reported at the setting the
+    # development tier selected rather than at a config default.
+    sw = ROOT / "runs" / tier / f"G_sweep_{mech}.json"
+    if sw.exists():
+        chosen = read_json(sw).get("chosen_value")
+        if chosen is not None:
+            run_condition("G", tier, cfg, gate_mechanism=mech,
+                          gate_percentile=chosen)
 
     lexicon_coverage(cfg, tier)
     _py("src/eval_retrieval.py", "--tier", tier)

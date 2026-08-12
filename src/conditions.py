@@ -249,7 +249,11 @@ def main():
     ap.add_argument("--top-k", type=int, default=None)
     ap.add_argument("--hotword-terms", type=int, default=None)
     ap.add_argument("--fuzzy-threshold", type=int, default=None)
-    ap.add_argument("--gate-threshold", type=float, default=None)
+    ap.add_argument("--gate-threshold", type=float, default=None,
+                    help="absolute confidence cut-off (gate mode 'absolute')")
+    ap.add_argument("--gate-percentile", type=float, default=None,
+                    help="ground the least-confident N%% of utterances (default mode)")
+    ap.add_argument("--gate-mode", choices=["percentile", "absolute"], default=None)
     ap.add_argument("--gate-mechanism", default=None)
     a = ap.parse_args()
     opts = {k: v for k, v in vars(a).items()

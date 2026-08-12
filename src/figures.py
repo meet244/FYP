@@ -42,25 +42,27 @@ def fig_frontier(tier: str, mechanism: str) -> Path | None:
         print(f"skip frontier: {p.relative_to(ROOT)} not found")
         return None
     d = read_json(p)
-    pts = sorted(d["points"], key=lambda x: x["threshold"])
+    pts = sorted(d["points"], key=lambda x: x.get("flagged_rate", 0))
     b = [x["b_wer"] for x in pts]
     u = [x["u_wer"] for x in pts]
-    th = [x["threshold"] for x in pts]
+    # Label each point by the share of utterances it re-decoded: on this corpus the
+    # interesting axis of the gate is cost, not the raw threshold value.
+    th = [100 * x.get("flagged_rate", 0) for x in pts]
 
     fig, ax = plt.subplots(figsize=(5.0, 3.6))
     ax.plot(u, b, "-o", color="#2b6cb0", ms=4, lw=1.4, zorder=3)
     for x, y, t in zip(u, b, th):
-        ax.annotate(f"{t:g}", (x, y), textcoords="offset points", xytext=(4, 4),
+        ax.annotate(f"{t:.0f}%", (x, y), textcoords="offset points", xytext=(4, 4),
                     fontsize=7, color="#4a5568")
     ax.plot(u[0], b[0], "s", color="#718096", ms=8, label="unbiased (B0)", zorder=4)
     ax.plot(u[-1], b[-1], "^", color="#c53030", ms=8,
             label=f"global {mechanism}", zorder=4)
-    chosen = d.get("chosen_threshold")
-    if chosen is not None:
-        c = next((x for x in pts if x["threshold"] == chosen), None)
-        if c:
-            ax.plot(c["u_wer"], c["b_wer"], "*", color="#2f855a", ms=15,
-                    label=f"chosen gate ({chosen:g})", zorder=5)
+    chosen = d.get("chosen") or None
+    if chosen:
+        ax.plot(chosen["u_wer"], chosen["b_wer"], "*", color="#2f855a", ms=15,
+                label=(f"chosen gate: {100*chosen['flagged_rate']:.0f}% re-decoded, "
+                       f"{100*(chosen.get('retained_gain') or 0):.0f}% of gain"),
+                zorder=5)
     ax.set_xlabel("U-WER  (non-terminology words) →  worse")
     ax.set_ylabel("B-WER  (syllabus terms) →  worse")
     ax.set_title(f"Confidence-gating trade-off frontier ({tier}, {mechanism})")
