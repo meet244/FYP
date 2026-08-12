@@ -1,0 +1,22 @@
+{
+  "radius_s": 2.5,
+  "lambda_db_per_s": 2.0,
+  "n_utts": 3136,
+  "n_boundaries_refined": 3106,
+  "total_hours": 5.187,
+  "boundary_shift_mean": -0.19801030264004524,
+  "boundary_shift_abs_mean": 0.6700386349001909,
+  "boundary_shift_median": -0.14999999999997726,
+  "boundary_shift_p10": -1.1899999999999977,
+  "boundary_shift_p90": 0.9750000000000014,
+  "boundary_shift_unmoved_pct": 10.3026400515132,
+  "min_duration_ratio": 0.6,
+  "min_duration_s": 0.6,
+  "max_ref_words_per_second": 7.222222222222222,
+  "acceptance_gate_passed": true,
+  "constraints": {
+    "min_utt_s": 0.4,
+    "min_share_of_nominal": 0.6
+  },
+  "method": "internal boundaries snapped to the quietest instant within the search radius, with a dB-per-second displacement penalty; transcript-to-utterance assignment unchanged"
+}

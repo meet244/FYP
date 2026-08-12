@@ -1,32 +1,84 @@
-# Frozen experiment settings. Anything changed here invalidates the ASR cache key.
+# Frozen experiment settings (§4, §13).
+#
+# Every field under `model` and `decode` enters the ASR cache key: changing one of
+# them invalidates cached decodes rather than silently mixing configurations.
+# `pilots` records the decisions taken in §4.2 / §4.3 so the choice is auditable.
+
 model:
-  backend: local
-  size: large-v3
-  compute_type: int8      # 16 GB machine; int8 keeps large-v3 comfortably in RAM
-  device: cpu             # CTranslate2 does not use the Apple Silicon GPU
-  cpu_threads: 0          # 0 = CTranslate2 default (all physical cores)
+  backend: local              # faster-whisper / CTranslate2, run locally (§4.1)
+  size: large-v3-turbo        # primary system; §4.2 pilot compares against large-v3
+  compute_type: int8          # 8-bit integer quantisation on CPU
+  device: cpu                 # CTranslate2 does not use the Apple Silicon GPU
+  cpu_threads: 0              # 0 = all physical cores
+  num_workers: 1
 
 decode:
-  language: hi            # fixed after the week-2 pilot (hi vs en vs auto)
-  beam_size: 5
-  temperature: 0.0
-  condition_on_previous_text: false
-  vad_filter: false
+  language: hi                # fixed by the §4.3 pilot (hi / en / auto)
+  beam_size: 5                # fixed beam width
+  temperature: 0.0            # deterministic; no temperature fallback
+  condition_on_previous_text: false   # utterances are independent segments
+  vad_filter: false           # audio is already sentence-segmented
+  word_timestamps: true       # required for per-token confidences (§7.4)
 
 data:
-  full_manifest: data/manifests/test.jsonl
-  subset_manifest: data/manifests/subset.jsonl   # 800 utts, seed 1337
-  dev_manifest: data/manifests/dev200.jsonl      # threshold / k tuning only
-  eval_manifest: data/manifests/eval600.jsonl
-  seed: 1337
+  kaldi_dir: data/raw/slr104/test/transcripts
+  # Identifies the cut audio; enters the ASR cache key. 'raw' = the distributed
+  # whole-second windows; 'refined-r2.5' = boundaries snapped to silence by
+  # src/refine_segments.py with radius 2.5 s and a 2.0 dB/s displacement penalty, the
+  # setting selected on the Tier-1 sample by src/tune_refinement.py. The §3.4 diagnostic
+  # showed the distributed windows to be unusable for utterance-level scoring.
+  audio_version: refined-r2.5-dp
+  refinement:
+    radius_s: 2.5
+    lambda_db_per_s: 2.0
+  audio_dir: data/audio/test
+  manifest: data/manifests/test.jsonl
+  tiers:
+    tier1: data/manifests/tier1_dev.jsonl     # ~200 utts, tuning only
+    tier2: data/manifests/tier2_eval.jsonl    # ~800 utts, full matrix
+    tier3: data/manifests/test.jsonl          # complete test set, 5.18 h
+  tier1_size: 200
+  tier2_size: 800
+  seed: 1337                  # recorded; tiers are frozen once and reused
 
 syllabus:
+  raw_dir: syllabus/raw
+  index_dir: syllabus/index
   embed_model: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
   chunk_words: 120
   chunk_overlap: 30
   top_k: 3
-  prompt_max_words: 120   # keep under ~200 tokens for Groq parity
 
-correction:
-  fuzzy_threshold: 88     # tuned on dev200 only
-  llm_max_token_change: 0.20
+retrieval:
+  granularity: lecture        # primary condition (§6.4); 'utterance' is the ablation
+  top_k: 3
+
+context:                      # M1, §7.1
+  style: prose                # prose | glossary  (prose is primary; glossary is an ablation row)
+  max_words: 120              # bounded, fixed truncation policy for all conditions
+
+hotwords:                     # M2, §7.2
+  n_terms: 30                 # number of hint terms; swept on Tier 1
+
+correction:                   # M3, §7.3
+  fuzzy_threshold: 88         # M3a, swept on Tier 1
+  min_token_len: 4
+  llm_max_token_change: 0.20  # M3b rewrite guard: discard above this fraction
+  llm_provider: groq          # groq | none  (none => M3b is skipped and reported as not run)
+  llm_model: llama-3.3-70b-versatile
+  llm_max_terms: 40
+
+gating:                       # G, §7.4
+  utt_conf_threshold: 0.60    # mean word probability below this => utterance flagged
+  word_conf_threshold: 0.50   # per-word probability below this => span flagged
+  sweep: [0.0, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  mechanism: M2               # which mechanism is applied to flagged utterances
+
+guards:                       # §7.5
+  context_echo_ngram: 3
+  context_echo_threshold: 0.5 # fraction of hyp n-grams found in the injected context
+
+scoring:
+  lexicon: syllabus/index/terms.txt   # frozen; defines B-WER / U-WER membership
+  bootstrap_resamples: 10000
+  bootstrap_seed: 0

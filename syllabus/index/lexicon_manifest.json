@@ -1,0 +1,32 @@
+{
+  "frozen": true,
+  "n_terms": 981,
+  "n_topics": 12,
+  "terms_sha256_12": "96d72c87273a",
+  "composition": {
+    "capitalised": 105,
+    "plain": 843,
+    "identifier_like": 6,
+    "multi_case": 27
+  },
+  "construction": "ASCII tokens of length >= 3 from the authored syllabus documents, minus a fixed general-English prose/function-word stop-list; first occurrence per document order retained. No term was added or removed after observing model output.",
+  "stoplist_size": 210,
+  "stoplist_sha1_12": "09e0f8d16d7a",
+  "source_docs": [
+    "c_programming.md",
+    "gedit_text_editor.md",
+    "gmail_and_web.md",
+    "jchempaint.md",
+    "latex.md",
+    "libreoffice_impress.md",
+    "libreoffice_writer.md",
+    "linux_shell.md",
+    "mozilla_thunderbird.md",
+    "python_basics.md",
+    "scilab.md",
+    "xfig.md"
+  ],
+  "embed_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "chunk_words": 120,
+  "chunk_overlap": 30
+}

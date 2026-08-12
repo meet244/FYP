@@ -1,0 +1,38 @@
+{
+  "n_utts": 20,
+  "seed": 7,
+  "tier": "tier1",
+  "distributed_mean_wer": 0.8663814174133699,
+  "distributed_median_wer": 0.44727272727272727,
+  "grid": [
+    {
+      "radius": 2.5,
+      "lambda": 2.0,
+      "mean_wer": 0.5460617713731356,
+      "median_wer": 0.43167701863354035,
+      "pct_worse_than_distributed": 30.0,
+      "mean_abs_shift_s": 0.8009999999999945
+    },
+    {
+      "radius": 3.5,
+      "lambda": 1.5,
+      "mean_wer": 0.6007397693839341,
+      "median_wer": 0.4365079365079365,
+      "pct_worse_than_distributed": 40.0,
+      "mean_abs_shift_s": 1.1369999999999973
+    },
+    {
+      "radius": 1.5,
+      "lambda": 3.0,
+      "mean_wer": 0.5852742326734452,
+      "median_wer": 0.43961352657004826,
+      "pct_worse_than_distributed": 25.0,
+      "mean_abs_shift_s": 0.733499999999999
+    }
+  ],
+  "chosen": {
+    "radius": 2.5,
+    "lambda": 2.0
+  },
+  "criterion": "lowest mean per-utterance WER on the Tier-1 sample"
+}

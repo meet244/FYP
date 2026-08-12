@@ -1,9 +1,25 @@
-data/
-cache/
 .venv/
 .env
-runs/*/hyps.jsonl
-runs/*/per_utt.jsonl
 __pycache__/
 *.pyc
+
+# Corpus, cut audio and manifests: regenerate with `make data refine tiers`.
+data/
+
+# Decode cache: the expensive artefact, but large and machine-local.
+# Regenerating it is exactly what `make baseline matrix` does.
+cache/
+
+# Hypotheses and per-utterance records are bulky; metrics.json, retrieval.json,
+# error_analysis.json, bootstrap.json and the sweeps are small and are kept.
+runs/**/hyps.jsonl
+runs/**/per_utt.jsonl
+
+# Embeddings are derived from the committed syllabus documents.
 syllabus/index/emb.npy
+
+# Throwaway tier used by src/selftest_pipeline.py
+runs/_selftest/
+
+# run_all.sh stage logs
+logs/

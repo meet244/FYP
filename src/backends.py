@@ -1,75 +1,155 @@
-"""ASR backends. Both return {'text': str, 'segments': [...]}"""
+"""ASR backend and decode configuration (§4).
+
+Whisper is run locally through faster-whisper / CTranslate2 because two of the three
+grounding mechanisms need decoder-level access and per-token confidence values that a
+hosted API does not expose (§4.1).
+
+`DecodeConfig` carries everything that can change the model's output — model identity,
+quantisation, decode parameters, injected context, hint terms — and hashes it into the
+cache key (§4.4). Two conditions that differ in any of these fields therefore cannot
+collide in the cache, and two that are genuinely identical share the decode.
+
+One runtime constraint from §7.2 is enforced here rather than trusted: faster-whisper
+silently ignores `hotwords` when `prefix` is set (get_prompt: `if hotwords and not
+prefix`). Setting both is a configuration error and raises.
+"""
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Optional
+
+from common import stable_hash
+
+
+@dataclass(frozen=True)
+class ModelSpec:
+    size: str = "large-v3-turbo"
+    compute_type: str = "int8"
+    device: str = "cpu"
+    cpu_threads: int = 0
+    num_workers: int = 1
+
+    @property
+    def name(self) -> str:
+        return f"local-{self.size}-{self.compute_type}"
 
 
 @dataclass
 class DecodeConfig:
-    language: Optional[str] = "hi"  # code-switched HI-EN; 'hi' beats 'en' as a prior.
-    temperature: float = 0.0        # None => auto-detect
+    """Everything that determines a decode. All fields enter the cache key."""
+    language: Optional[str] = "hi"        # None => auto-detect
     beam_size: int = 5
-    prompt: Optional[str] = None    # syllabus context goes here
-    extra: dict = field(default_factory=dict)
+    temperature: float = 0.0
+    condition_on_previous_text: bool = False
+    vad_filter: bool = False
+    word_timestamps: bool = True
+    # --- grounding payloads -------------------------------------------------
+    context: Optional[str] = None         # M1: initial_prompt (decoder text context)
+    hotwords: Optional[str] = None        # M2: hint phrases (token-level biasing)
+    prefix: Optional[str] = None          # unused; kept explicit for the §7.2 guard
+    # Identifies the cut audio the decode read. Segment refinement changes the audio
+    # without changing any decode parameter, so without this a refreeze of the corpus
+    # would silently serve hypotheses decoded from the old cuts.
+    audio_version: str = "raw"
 
-    def key(self) -> str:
-        import hashlib
-        import json
-        blob = json.dumps(self.__dict__, sort_keys=True, ensure_ascii=False)
-        return hashlib.sha1(blob.encode()).hexdigest()[:12]
+    def __post_init__(self):
+        if self.hotwords and self.prefix:
+            raise ValueError(
+                "§7.2: hotwords and prefix are mutually exclusive in faster-whisper — "
+                "the prefix silently disables the hints. Never set both.")
+
+    def key(self, model: ModelSpec) -> str:
+        payload = {"model": asdict(model), "decode": asdict(self)}
+        # cpu_threads / num_workers affect speed, not output; keep them out of the key
+        # so a machine change does not invalidate a cache of identical hypotheses.
+        payload["model"].pop("cpu_threads", None)
+        payload["model"].pop("num_workers", None)
+        return stable_hash(payload)
+
+    def describe(self) -> dict:
+        d = asdict(self)
+        d["context_words"] = len(self.context.split()) if self.context else 0
+        d["hotword_terms"] = len(self.hotwords.split(", ")) if self.hotwords else 0
+        return d
+
+
+def _word_records(segment) -> list[dict]:
+    words = getattr(segment, "words", None) or []
+    return [{"word": w.word, "start": w.start, "end": w.end,
+             "prob": getattr(w, "probability", None)} for w in words]
 
 
 class LocalWhisper:
-    def __init__(self, model_size="large-v3", compute_type="int8", device="cpu",
-                 cpu_threads=0):
-        from faster_whisper import WhisperModel
-        self.name = f"local-{model_size}-{compute_type}"
-        self.model = WhisperModel(model_size, device=device, compute_type=compute_type,
-                                  cpu_threads=cpu_threads)
+    """faster-whisper wrapper returning text plus the confidence instrumentation."""
 
-    def transcribe(self, audio_path: str, cfg: DecodeConfig):
+    def __init__(self, spec: ModelSpec = ModelSpec()):
+        from faster_whisper import WhisperModel
+        self.spec = spec
+        self.name = spec.name
+        self.model = WhisperModel(
+            spec.size, device=spec.device, compute_type=spec.compute_type,
+            cpu_threads=spec.cpu_threads, num_workers=spec.num_workers)
+
+    def transcribe(self, audio_path: str, cfg: DecodeConfig) -> dict:
         segments, info = self.model.transcribe(
             audio_path,
             language=cfg.language,
-            temperature=cfg.temperature,
             beam_size=cfg.beam_size,
-            initial_prompt=cfg.prompt,
-            condition_on_previous_text=False,   # utterances are independent
-            vad_filter=False,                   # already sentence-segmented
-            **cfg.extra,
+            temperature=cfg.temperature,
+            initial_prompt=cfg.context,
+            hotwords=cfg.hotwords,
+            prefix=cfg.prefix,
+            condition_on_previous_text=cfg.condition_on_previous_text,
+            vad_filter=cfg.vad_filter,
+            word_timestamps=cfg.word_timestamps,
         )
-        segs = [{"start": s.start, "end": s.end, "text": s.text} for s in segments]
-        return {"text": "".join(s["text"] for s in segs).strip(),
-                "segments": segs,
-                "language": getattr(info, "language", None),
-                "language_prob": getattr(info, "language_probability", None)}
+        segs = []
+        for s in segments:
+            segs.append({
+                "start": s.start, "end": s.end, "text": s.text,
+                "avg_logprob": s.avg_logprob,
+                "no_speech_prob": s.no_speech_prob,
+                "compression_ratio": s.compression_ratio,
+                "words": _word_records(s),
+            })
+        return {
+            "text": "".join(s["text"] for s in segs).strip(),
+            "segments": segs,
+            "language": getattr(info, "language", None),
+            "language_prob": getattr(info, "language_probability", None),
+        }
 
 
-class GroqWhisper:
-    def __init__(self, model="whisper-large-v3"):
-        from groq import Groq
-        self.name = f"groq-{model}"
-        self.client = Groq(api_key=os.environ["GROQ_API_KEY"])
-        self.model = model
-
-    def transcribe(self, audio_path: str, cfg: DecodeConfig):
-        with open(audio_path, "rb") as fh:
-            r = self.client.audio.transcriptions.create(
-                file=(os.path.basename(audio_path), fh.read()),
-                model=self.model,
-                language=cfg.language,
-                temperature=cfg.temperature,
-                prompt=cfg.prompt or "",
-                response_format="verbose_json",
-            )
-        d = r if isinstance(r, dict) else r.model_dump()
-        return {"text": d.get("text", "").strip(),
-                "segments": d.get("segments", []),
-                "language": d.get("language"),
-                "language_prob": None}
+def get_backend(name: str, spec: ModelSpec | None = None):
+    if name != "local":
+        raise ValueError(
+            f"backend {name!r} is not available: §4.1 requires local execution for "
+            "decoder-level access and per-token confidences.")
+    return LocalWhisper(spec or ModelSpec())
 
 
-def get_backend(name: str, **kw):
-    return {"local": LocalWhisper, "groq": GroqWhisper}[name](**kw)
+def model_spec_from_config(cfg, override_size: str | None = None) -> ModelSpec:
+    m = cfg["model"]
+    return ModelSpec(
+        size=override_size or m["size"],
+        compute_type=m["compute_type"],
+        device=m["device"],
+        cpu_threads=m.get("cpu_threads", 0),
+        num_workers=m.get("num_workers", 1),
+    )
+
+
+def decode_config_from_config(cfg, **overrides) -> DecodeConfig:
+    d = cfg["decode"]
+    lang = d.get("language")
+    base = dict(
+        language=None if lang in (None, "auto", "none") else lang,
+        beam_size=d["beam_size"],
+        temperature=d["temperature"],
+        condition_on_previous_text=d["condition_on_previous_text"],
+        vad_filter=d["vad_filter"],
+        word_timestamps=d.get("word_timestamps", True),
+        audio_version=cfg.get_path("data.audio_version", "raw"),
+    )
+    base.update(overrides)
+    return DecodeConfig(**base)

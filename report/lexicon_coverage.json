@@ -1,0 +1,11 @@
+{
+  "ref_tokens": 2229,
+  "bias_tokens": 469,
+  "bias_token_rate": 0.2104082548227905,
+  "bias_tokens_same_script": 350,
+  "bias_token_rate_same_script": 0.15702108568864961,
+  "tier": "tier1",
+  "lexicon_path": "syllabus/index/terms.txt",
+  "lexicon_size": 981,
+  "lexicon_sha256_12": "96d72c87273a"
+}

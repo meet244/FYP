@@ -1,80 +1,152 @@
-"""Method B1 — deterministic phonetic/lexical correction against retrieved terms."""
-import argparse
-import json
-import sys
-from pathlib import Path
+"""M3a — lexical/phonetic output-level correction (§7.3).
+
+For each output token absent from the term lexicon, find the closest retrieved term
+under a string-similarity measure and replace it if the similarity exceeds a threshold.
+Deterministic, fast and easily explained. The threshold is swept on Tier 1 only.
+
+Two matching passes, both symmetric in script:
+
+  1. single token  — "matplotlip" -> "matplotlib"
+  2. token n-gram  — "mat plot lib" -> "matplotlib", which is the characteristic failure
+                     mode this study is about: a compound technical term split into
+                     several ordinary words. A single-token matcher cannot repair it.
+
+Comparison happens on the level-2 (romanised, phonetically folded) form, so a term the
+model emitted in Devanagari can still be matched against a Latin-script lexicon entry.
+Replacement is written in the lexicon's own script, which is what the reference uses for
+technical terms.
+
+When `spans` is supplied (confidence gating, §7.4) only tokens inside a flagged span are
+considered for replacement; everything else is left untouched.
+"""
+from __future__ import annotations
 
 from rapidfuzz import fuzz, process
 
-sys.path.insert(0, str(Path(__file__).parent))
-from score import score_file  # noqa: E402
+from normalize import level1, romanise_token
 
 
-def correct(hyp: str, candidate_terms: list[str], threshold: int = 88) -> str:
-    """Replace out-of-lexicon ASCII tokens with the closest syllabus term."""
-    if not candidate_terms:
-        return hyp
-    lower = {t.lower() for t in candidate_terms}
-    out = []
-    for tok in hyp.split():
-        raw = tok
-        if tok.lower() in lower or not tok.isascii() or len(tok) < 4:
-            out.append(raw)
+def _folded(term: str) -> str:
+    return " ".join(romanise_token(t) for t in level1(term).split()).strip()
+
+
+class TermMatcher:
+    """Fuzzy matcher over one utterance's candidate term list."""
+
+    def __init__(self, terms: list[str], max_ngram: int = 3):
+        self.terms = [t for t in dict.fromkeys(terms)]
+        self.max_ngram = max_ngram
+        self.folded: dict[str, str] = {}
+        self.by_folded: dict[str, str] = {}
+        for t in self.terms:
+            f = _folded(t)
+            if not f:
+                continue
+            self.folded[t] = f
+            self.by_folded.setdefault(f, t)
+        self.choices = list(self.by_folded)
+        # Terms whose own folded form is multi-word are matched against token n-grams.
+        self.single = [c for c in self.choices if " " not in c]
+
+    def in_lexicon(self, token: str) -> bool:
+        return _folded(token) in self.by_folded
+
+    def canonical(self, token: str) -> str | None:
+        """The lexicon's own surface form for a token that folds onto a term."""
+        return self.by_folded.get(_folded(token))
+
+    def best(self, query: str, threshold: int, choices=None) -> tuple[str, float] | None:
+        f = _folded(query)
+        if not f:
+            return None
+        pool = choices if choices is not None else self.single
+        if not pool:
+            return None
+        m = process.extractOne(f, pool, scorer=fuzz.ratio, score_cutoff=threshold)
+        if not m:
+            return None
+        return self.by_folded[m[0]], m[1]
+
+
+def correct_tokens(tokens: list[str], matcher: TermMatcher, threshold: int = 88,
+                   min_len: int = 4, allowed: set[int] | None = None) -> tuple[list[str], list[dict]]:
+    """Return (corrected tokens, list of edits). `allowed` restricts editable indices."""
+    out: list[str] = []
+    edits: list[dict] = []
+    i = 0
+    n = len(tokens)
+    while i < n:
+        if allowed is not None and i not in allowed:
+            out.append(tokens[i])
+            i += 1
             continue
-        m = process.extractOne(tok.lower(), candidate_terms, scorer=fuzz.ratio)
-        out.append(m[0] if m and m[1] >= threshold else raw)
-    return " ".join(out)
+
+        # --- multi-token merge: does a window of 2..max_ngram tokens spell a term? ---
+        merged = None
+        for w in range(matcher.max_ngram, 1, -1):
+            if i + w > n:
+                continue
+            if allowed is not None and any(j not in allowed for j in range(i, i + w)):
+                continue
+            window = tokens[i:i + w]
+            if any(matcher.in_lexicon(t) for t in window):
+                continue          # do not merge tokens that are already terms
+            joined = "".join(_folded(t) for t in window)
+            if len(joined) < min_len:
+                continue
+            m = process.extractOne(joined, matcher.single, scorer=fuzz.ratio,
+                                   score_cutoff=threshold)
+            if m:
+                merged = (matcher.by_folded[m[0]], m[1], w, " ".join(window))
+                break
+        if merged:
+            term, score, w, src = merged
+            out.append(term)
+            edits.append({"type": "merge", "from": src, "to": term,
+                          "score": round(score, 1)})
+            i += w
+            continue
+
+        # --- spelling canonicalisation ---------------------------------------
+        # A token can fold onto a lexicon term while its surface spelling differs
+        # ("printff" folds to "printf"). Scoring compares level-1 surfaces, so the
+        # spelling is still an error and rewriting it to the lexicon's own form is a
+        # correction, not a no-op. Restricted to Latin-script tokens: when the model
+        # wrote the term in Devanagari the script choice is the reference's business
+        # and level-2 scoring already treats the two as equal.
+        tok = tokens[i]
+        canon = matcher.canonical(tok)
+        if canon is not None:
+            if tok.isascii() and canon != tok and len(_folded(tok)) >= min_len:
+                out.append(canon)
+                edits.append({"type": "canon", "from": tok, "to": canon,
+                              "score": 100.0})
+            else:
+                out.append(tok)
+            i += 1
+            continue
+
+        # --- single-token replacement ---
+        if len(_folded(tok)) >= min_len and not matcher.in_lexicon(tok):
+            m = matcher.best(tok, threshold)
+            if m and m[0] != tok:
+                out.append(m[0])
+                edits.append({"type": "sub", "from": tok, "to": m[0],
+                              "score": round(m[1], 1)})
+                i += 1
+                continue
+        out.append(tok)
+        i += 1
+    return out, edits
 
 
-def apply_to_run(in_hyps, out_dir, pass1, k=3, threshold=88, terms_path=None):
-    from retrieve import SyllabusRetriever
-    r = SyllabusRetriever()
-    q = {j["utt_id"]: j["hyp"] for j in
-         (json.loads(l) for l in open(pass1, encoding="utf-8"))}
-    rows = [json.loads(l) for l in open(in_hyps, encoding="utf-8")]
-    changed = 0
-    for row in rows:
-        cands = r.candidate_terms(q.get(row["utt_id"], row["hyp"]), k=k)
-        new = correct(row["hyp"], cands, threshold)
-        changed += new != row["hyp"]
-        row["hyp_before_correction"] = row["hyp"]
-        row["hyp"] = new
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    with open(out_dir / "hyps.jsonl", "w", encoding="utf-8") as f:
-        for row in rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
-    m = score_file(out_dir / "hyps.jsonl", terms_path)
-    m["utts_changed"] = changed
-    m["threshold"] = threshold
-    m["k"] = k
-    (out_dir / "metrics.json").write_text(json.dumps(m, indent=2, ensure_ascii=False),
-                                          encoding="utf-8")
-    return m
-
-
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--in-hyps", required=True)
-    ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--pass1", default="runs/S0_baseline/hyps.jsonl")
-    ap.add_argument("--k", type=int, default=3)
-    ap.add_argument("--threshold", type=int, default=88)
-    ap.add_argument("--sweep", default=None,
-                    help="comma-separated thresholds, e.g. 80,84,88,92,96")
-    ap.add_argument("--terms", default="syllabus/index/terms.txt")
-    a = ap.parse_args()
-
-    if a.sweep:
-        results = []
-        for th in [int(x) for x in a.sweep.split(",")]:
-            m = apply_to_run(a.in_hyps, f"{a.out_dir}_th{th}", a.pass1, a.k, th, a.terms)
-            results.append({"threshold": th, "wer": m["wer"],
-                            "term_f1": m.get("term_f1"), "changed": m["utts_changed"]})
-            print(f"th={th}: WER={m['wer']:.4f} termF1={m.get('term_f1', 0):.4f} "
-                  f"changed={m['utts_changed']}")
-        Path("runs/threshold_sweep.json").write_text(
-            json.dumps(results, indent=2), encoding="utf-8")
-    else:
-        m = apply_to_run(a.in_hyps, a.out_dir, a.pass1, a.k, a.threshold, a.terms)
-        print(json.dumps(m, indent=2, ensure_ascii=False))
+def correct_utterance(hyp: str, candidate_terms: list[str], threshold: int = 88,
+                      min_len: int = 4, spans: list[int] | None = None) -> tuple[str, list[dict]]:
+    """Correct one hypothesis string. `spans` = indices of low-confidence tokens (§7.4)."""
+    if not candidate_terms or not hyp.strip():
+        return hyp, []
+    tokens = level1(hyp).split()
+    matcher = TermMatcher(candidate_terms)
+    allowed = set(spans) if spans is not None else None
+    fixed, edits = correct_tokens(tokens, matcher, threshold, min_len, allowed)
+    return " ".join(fixed), edits

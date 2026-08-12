@@ -22,6 +22,7 @@ animation
 antivirus
 append
 application
+applications
 apply
 apps
 apropos
@@ -280,6 +281,7 @@ endfunction
 engine
 entrance
 enumerate
+environment
 eps
 equation
 equations
@@ -648,6 +650,7 @@ ppt
 pptx
 preamble
 precedence
+preferences
 preparation
 presentation
 presenter
@@ -762,6 +765,7 @@ sequence
 server
 set
 setting
+settings
 setup
 share
 sharing

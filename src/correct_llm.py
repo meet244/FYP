@@ -1,102 +1,107 @@
-"""Method B2 — LLM correction constrained by retrieved syllabus terms.
+"""M3b — constrained model-based output-level correction (§7.3).
 
-Hard-constrained on purpose: an unconstrained LLM paraphrases and destroys WER.
-Any output that changes more than `max_change` of the tokens is discarded.
+A language model repairs only misrecognised terminology, under hard constraints:
+preserve all other words exactly, preserve script, do not translate, punctuate,
+reorder, add or delete words. A post-check (the rewrite guard, §7.5) discards the
+correction whenever it alters more than a fixed fraction of tokens, and the **discard
+rate is reported** — an unconstrained rewrite destroys WER, and demonstrating that this
+was detected and prevented is a point in the paper's favour.
+
+M3b is worth emphasising as the only mechanism deployable against a hosted ASR API,
+which is a practical contribution independent of its accuracy.
+
+Requests are cached per (utterance, model, prompt hash) so a repeat run costs nothing.
+If no provider is configured the condition is skipped loudly rather than silently
+substituting the uncorrected baseline, so it can never be mistaken for a real result.
 """
-import argparse
-import json
+from __future__ import annotations
+
 import os
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
-from score import score_file  # noqa: E402
+from common import ROOT, stable_hash, write_json
+from guards import apply_rewrite_guard
 
 SYSTEM = (
     "You correct ASR transcripts of Hindi-English code-switched technical lectures. "
-    "Fix ONLY misrecognised technical terms, using the reference term list. "
+    "Fix ONLY misrecognised technical terms, using the supplied reference term list. "
     "Rules: preserve every other word exactly, including disfluencies and grammar. "
-    "Preserve the original script of each word. Do not translate, punctuate, or reorder. "
-    "Do not add or remove words. Output the corrected transcript and nothing else."
-)
+    "Preserve the original script of each word. Do not translate, transliterate, "
+    "punctuate or reorder. Do not add or delete words. If nothing is clearly a "
+    "misrecognised technical term, return the transcript unchanged. "
+    "Output only the corrected transcript.")
 
 
 def build_user(hyp: str, terms: list[str]) -> str:
-    return f"Reference terms: {', '.join(terms[:40])}\n\nTranscript: {hyp}"
-
-
-def token_change_ratio(a: str, b: str) -> float:
-    import jiwer
-    if not a.strip():
-        return 0.0 if not b.strip() else 1.0
-    o = jiwer.process_words([a], [b])
-    return (o.substitutions + o.insertions + o.deletions) / max(1, len(a.split()))
+    return f"Reference terms: {', '.join(terms)}\n\nTranscript: {hyp}"
 
 
 class GroqCorrector:
-    def __init__(self, model="llama-3.3-70b-versatile"):
+    def __init__(self, model: str):
         from groq import Groq
-        self.client = Groq(api_key=os.environ["GROQ_API_KEY"])
+        key = os.environ.get("GROQ_API_KEY")
+        if not key:
+            raise RuntimeError("GROQ_API_KEY is not set")
+        self.client = Groq(api_key=key)
         self.model = model
 
-    def __call__(self, hyp, terms):
+    def __call__(self, hyp: str, terms: list[str]) -> str:
         r = self.client.chat.completions.create(
             model=self.model, temperature=0.0, max_tokens=512,
             messages=[{"role": "system", "content": SYSTEM},
                       {"role": "user", "content": build_user(hyp, terms)}])
-        return r.choices[0].message.content.strip()
+        return (r.choices[0].message.content or "").strip()
 
 
-def main(a):
-    from retrieve import SyllabusRetriever
-    r = SyllabusRetriever()
-    corrector = GroqCorrector(a.model)
-    q = {j["utt_id"]: j["hyp"] for j in
-         (json.loads(l) for l in open(a.pass1, encoding="utf-8"))}
-    rows = [json.loads(l) for l in open(a.in_hyps, encoding="utf-8")]
+def get_corrector(cfg):
+    provider = cfg["correction"]["llm_provider"]
+    if provider in (None, "none", ""):
+        return None, "no provider configured"
+    if provider == "groq":
+        try:
+            return GroqCorrector(cfg["correction"]["llm_model"]), None
+        except Exception as exc:                                   # noqa: BLE001
+            return None, str(exc)
+    return None, f"unknown provider {provider!r}"
 
-    cache_dir = Path("cache/llm") / a.model
+
+def correct_run(rows: list[dict], plan, cfg, meta: dict):
+    """Apply M3b to `rows` in place. Signature matches conditions.run_text_condition."""
+    model = cfg["correction"]["llm_model"]
+    max_change = cfg["correction"]["llm_max_token_change"]
+    max_terms = cfg["correction"]["llm_max_terms"]
+    corrector, err = get_corrector(cfg)
+    if corrector is None:
+        raise SystemExit(
+            f"M3b skipped: {err}. Set GROQ_API_KEY (or correction.llm_provider: none "
+            f"in configs/config.yaml to exclude M3b from the matrix). The condition is "
+            f"deliberately not falling back to the uncorrected baseline, which would "
+            f"look like a real result.")
+
+    cache_dir = ROOT / "cache" / "llm" / model
     cache_dir.mkdir(parents=True, exist_ok=True)
-    changed = discarded = 0
+    n_api = 0
     for i, row in enumerate(rows, 1):
-        cp = cache_dir / f"{row['utt_id']}.json"
+        terms = plan.candidates(row["utt_id"])[:max_terms]
+        prompt_key = stable_hash({"hyp": row["hyp"], "terms": terms, "sys": SYSTEM})
+        cp = cache_dir / f"{row['utt_id']}_{prompt_key}.json"
         if cp.exists():
-            new = json.loads(cp.read_text(encoding="utf-8"))["out"]
+            corrected = __import__("json").loads(cp.read_text(encoding="utf-8"))["out"]
         else:
-            terms = r.candidate_terms(q.get(row["utt_id"], row["hyp"]), k=a.k)
-            new = corrector(row["hyp"], terms)
-            cp.write_text(json.dumps({"in": row["hyp"], "out": new}, ensure_ascii=False),
-                          encoding="utf-8")
-        if token_change_ratio(row["hyp"], new) > a.max_change:
-            discarded += 1
-            new = row["hyp"]
-        changed += new != row["hyp"]
-        row["hyp_before_correction"] = row["hyp"]
-        row["hyp"] = new
+            corrected = corrector(row["hyp"], terms)
+            cp.write_text(__import__("json").dumps(
+                {"in": row["hyp"], "out": corrected, "terms": terms},
+                ensure_ascii=False), encoding="utf-8")
+            n_api += 1
+        apply_rewrite_guard(row, corrected, max_change)
         if i % 50 == 0:
-            print(f"  {i}/{len(rows)} (changed={changed}, discarded={discarded})",
-                  flush=True)
+            print(f"  {i}/{len(rows)} corrected "
+                  f"(api calls={n_api})", flush=True)
 
-    out_dir = Path(a.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    with open(out_dir / "hyps.jsonl", "w", encoding="utf-8") as f:
-        for row in rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
-    m = score_file(out_dir / "hyps.jsonl", a.terms)
-    m.update({"utts_changed": changed, "corrections_discarded": discarded,
-              "max_change": a.max_change, "llm": a.model})
-    (out_dir / "metrics.json").write_text(json.dumps(m, indent=2, ensure_ascii=False),
-                                          encoding="utf-8")
-    print(json.dumps(m, indent=2, ensure_ascii=False))
-
-
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--in-hyps", required=True)
-    ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--pass1", default="runs/S0_baseline/hyps.jsonl")
-    ap.add_argument("--model", default="llama-3.3-70b-versatile")
-    ap.add_argument("--k", type=int, default=3)
-    ap.add_argument("--max-change", type=float, default=0.20)
-    ap.add_argument("--terms", default="syllabus/index/terms.txt")
-    main(ap.parse_args())
+    meta.update({
+        "llm_model": model, "llm_max_token_change": max_change,
+        "llm_max_terms": max_terms, "api_calls": n_api,
+        "n_discarded": sum(1 for r in rows if r.get("guard_rewrite_discarded")),
+        "n_changed": sum(1 for r in rows if r.get("corrected")),
+    })
+    return rows, meta, plan.dump()

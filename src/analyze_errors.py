@@ -1,112 +1,151 @@
-"""Baseline error analysis: substitution table, WER vs duration, term headroom."""
+"""Baseline error analysis (§8.4). Produces the paper's discussion section.
+
+Three deliverables:
+
+  1. WER as a function of utterance duration.
+  2. The hundred most frequent substitution pairs, each classified as orthographic,
+     terminology, function-word, or hallucination error.
+  3. The share of total word errors falling on lexicon terms — the **headroom estimate**.
+
+The headroom estimate is computed and stated *before* presenting any grounded result. If
+terminology accounts for only a small fraction of total errors, the maximum achievable
+WER gain is correspondingly bounded. Predicting a modest result in advance and then
+observing it is a far stronger position than reporting a modest result unexplained.
+"""
+from __future__ import annotations
+
 import argparse
 import collections
-import json
-import sys
 from pathlib import Path
 
 import jiwer
 
-sys.path.insert(0, str(Path(__file__).parent))
-from normalize import DEVANAGARI, basic_norm, script_invariant_norm  # noqa: E402
+from common import ROOT, load_config, read_jsonl, write_json
+from lexicon import load_lexicon
+from normalize import DEVANAGARI, level1, level2
+
+# Frequent Hindi function words: errors on these are grammatical/acoustic noise, not
+# terminology failures, and they dominate raw substitution counts.
+FUNCTION_WORDS = set("""
+का की के को में से पर है हैं हो होता होती होते था थी थे और या भी ही तो जो यह वह इस उस
+इसे उसे कि कर करें करते करना किया गया गयी गये हम आप वे एक अब यहाँ यहां वहाँ वहां जब तब
+अगर लिए साथ बाद पहले तरह ऐसे कुछ सब बहुत नहीं ना क्या कैसे क्यों जैसे तक द्वारा वाला
+""".split())
 
 
-def classify(ref_w, hyp_w, terms):
-    """Coarse bucket for a substitution pair."""
-    if script_invariant_norm(ref_w) == script_invariant_norm(hyp_w):
-        return "orthographic/script"
-    if ref_w in terms or hyp_w in terms:
-        return "technical-term"
+def classify(ref_w: str, hyp_w: str, lex) -> str:
+    """Coarse bucket for one substitution pair."""
+    if level2(ref_w) == level2(hyp_w):
+        return "orthographic"           # same word, different script/spelling convention
+    if lex.in_bias(ref_w) or lex.in_bias(hyp_w):
+        return "terminology"
+    if ref_w in FUNCTION_WORDS or hyp_w in FUNCTION_WORDS:
+        return "function_word"
     if not DEVANAGARI.search(ref_w) and not DEVANAGARI.search(hyp_w):
-        return "english-word"
-    if len(ref_w) <= 3:
-        return "function-word"
-    return "other-hindi"
+        return "english_nonterm"
+    return "other"
 
 
-def main(hyp_jsonl, terms_path, top=100):
-    rows = [json.loads(l) for l in open(hyp_jsonl, encoding="utf-8")]
-    terms = set()
-    if Path(terms_path).exists():
-        terms = {t.strip().lower() for t in open(terms_path, encoding="utf-8")
-                 if t.strip()}
+def analyse(tier: str, run: str, cfg, top: int = 100) -> dict:
+    lex = load_lexicon(cfg["scoring"]["lexicon"])
+    rows = read_jsonl(ROOT / "runs" / tier / run / "hyps.jsonl")
 
     pairs = collections.Counter()
     buckets = collections.Counter()
-    dels = collections.Counter()
-    inss = collections.Counter()
-    term_errors = tot_errors = 0
-    by_dur = collections.defaultdict(lambda: [0, 0])  # bucket -> [errors, ref_words]
+    dels, inss = collections.Counter(), collections.Counter()
+    hallucinated_terms = collections.Counter()
+    by_dur = collections.defaultdict(lambda: [0, 0])
+    tot_err = term_err = 0
+    ins_total = 0
 
     for r in rows:
-        ref, hyp = basic_norm(r["ref"]), basic_norm(r["hyp"])
+        ref, hyp = level1(r["ref"]), level1(r.get("hyp") or "")
         if not ref.strip():
             continue
-        o = jiwer.process_words([ref], [hyp])
-        ref_w, hyp_w = o.references[0], o.hypotheses[0]
+        o = jiwer.process_words([ref], [hyp if hyp.strip() else ""])
+        rw, hw = o.references[0], o.hypotheses[0]
         n_err = o.substitutions + o.insertions + o.deletions
-        tot_errors += n_err
+        tot_err += n_err
         d = r.get("duration") or 0
-        b = "0-2s" if d < 2 else "2-4s" if d < 4 else "4-7s" if d < 7 else "7s+"
-        by_dur[b][0] += n_err
-        by_dur[b][1] += len(ref_w)
+        bucket = "0-2s" if d < 2 else "2-4s" if d < 4 else "4-7s" if d < 7 else "7s+"
+        by_dur[bucket][0] += n_err
+        by_dur[bucket][1] += len(rw)
+
         for ch in o.alignments[0]:
             if ch.type == "substitute":
                 for i, j in zip(range(ch.ref_start_idx, ch.ref_end_idx),
                                 range(ch.hyp_start_idx, ch.hyp_end_idx)):
-                    pairs[(ref_w[i], hyp_w[j])] += 1
-                    buckets[classify(ref_w[i], hyp_w[j], terms)] += 1
-                    if ref_w[i] in terms or hyp_w[j] in terms:
-                        term_errors += 1
+                    pairs[(rw[i], hw[j])] += 1
+                    buckets[classify(rw[i], hw[j], lex)] += 1
+                    if lex.in_bias(rw[i]) or lex.in_bias(hw[j]):
+                        term_err += 1
             elif ch.type == "delete":
                 for i in range(ch.ref_start_idx, ch.ref_end_idx):
-                    dels[ref_w[i]] += 1
-                    if ref_w[i] in terms:
-                        term_errors += 1
+                    dels[rw[i]] += 1
+                    if lex.in_bias(rw[i]):
+                        term_err += 1
             elif ch.type == "insert":
                 for j in range(ch.hyp_start_idx, ch.hyp_end_idx):
-                    inss[hyp_w[j]] += 1
-                    if hyp_w[j] in terms:
-                        term_errors += 1
+                    inss[hw[j]] += 1
+                    ins_total += 1
+                    if lex.in_bias(hw[j]):
+                        term_err += 1
+                        hallucinated_terms[hw[j]] += 1
 
-    print(f"\n=== top {top} substitution pairs (ref -> hyp) ===")
-    for (a, b), c in pairs.most_common(top):
-        print(f"{c:4d}  {a}  ->  {b}")
-    print("\n=== substitution categories ===")
-    tot_sub = sum(buckets.values()) or 1
-    for k, v in buckets.most_common():
-        print(f"{v:6d}  {100*v/tot_sub:5.1f}%  {k}")
-    print("\n=== top deletions / insertions ===")
-    print("DEL:", ", ".join(f"{w}({c})" for w, c in dels.most_common(20)))
-    print("INS:", ", ".join(f"{w}({c})" for w, c in inss.most_common(20)))
-    print("\n=== WER by utterance duration ===")
-    for b in ["0-2s", "2-4s", "4-7s", "7s+"]:
-        e, n = by_dur[b]
-        if n:
-            print(f"{b:>5}: WER={e/n:.4f}  ({n} ref words, {e} errors)")
-    if terms:
-        print(f"\n=== headroom ===\n{term_errors}/{tot_errors} word errors touch a "
-              f"syllabus term = {100*term_errors/max(1,tot_errors):.1f}% of all errors")
-
-    out = Path(hyp_jsonl).parent / "error_analysis.json"
-    out.write_text(json.dumps({
-        "top_substitutions": [{"ref": a, "hyp": b, "count": c}
-                              for (a, b), c in pairs.most_common(top)],
-        "categories": dict(buckets),
+    sub_total = sum(buckets.values()) or 1
+    out = {
+        "tier": tier, "run": run, "n_utts": len(rows),
+        "total_errors": tot_err,
+        "term_touching_errors": term_err,
+        "headroom_estimate": {
+            "share_of_errors_on_lexicon_terms": term_err / max(1, tot_err),
+            "statement": (
+                f"{term_err} of {tot_err} word errors ({100*term_err/max(1,tot_err):.1f}%) "
+                f"touch a syllabus lexicon term. Terminology biasing can therefore "
+                f"reduce overall WER by at most that share, and only to the extent it "
+                f"repairs those errors without introducing new ones."),
+        },
+        "substitution_categories": {
+            k: {"count": v, "share": v / sub_total} for k, v in buckets.most_common()},
+        "top_substitutions": [
+            {"ref": a, "hyp": b, "count": c,
+             "category": classify(a, b, lex)} for (a, b), c in pairs.most_common(top)],
         "top_deletions": dels.most_common(30),
         "top_insertions": inss.most_common(30),
-        "wer_by_duration": {k: {"errors": v[0], "ref_words": v[1],
-                                "wer": v[0] / v[1] if v[1] else None}
-                            for k, v in by_dur.items()},
-        "total_errors": tot_errors, "term_touching_errors": term_errors,
-    }, indent=2, ensure_ascii=False), encoding="utf-8")
-    print("\n->", out)
+        "hallucinated_lexicon_terms": hallucinated_terms.most_common(30),
+        "insertions_total": ins_total,
+        "wer_by_duration": {
+            k: {"errors": v[0], "ref_words": v[1],
+                "wer": v[0] / v[1] if v[1] else None}
+            for k, v in sorted(by_dur.items())},
+    }
+
+    print(f"\n=== headroom estimate (§8.4) ===\n{out['headroom_estimate']['statement']}")
+    print(f"\n=== substitution categories ({sub_total} substitutions) ===")
+    for k, v in out["substitution_categories"].items():
+        print(f"  {v['count']:6d}  {100*v['share']:5.1f}%  {k}")
+    print(f"\n=== WER by utterance duration ===")
+    for k, v in out["wer_by_duration"].items():
+        if v["wer"] is not None:
+            print(f"  {k:>5s}: WER={v['wer']:.4f}  ({v['ref_words']} ref words)")
+    print(f"\n=== top 20 substitution pairs (ref -> hyp) ===")
+    for p in out["top_substitutions"][:20]:
+        print(f"  {p['count']:4d}  {p['ref']:>22s}  ->  {p['hyp']:<22s} [{p['category']}]")
+
+    write_json(ROOT / "runs" / tier / run / "error_analysis.json", out)
+    print(f"\n-> runs/{tier}/{run}/error_analysis.json")
+    return out
+
+
+def main():
+    cfg = load_config()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--tier", default="tier2")
+    ap.add_argument("--run", default="B0")
+    ap.add_argument("--top", type=int, default=100)
+    a = ap.parse_args()
+    analyse(a.tier, a.run, cfg, a.top)
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--hyps", default="runs/S0_baseline/hyps.jsonl")
-    ap.add_argument("--terms", default="syllabus/index/terms.txt")
-    ap.add_argument("--top", type=int, default=100)
-    a = ap.parse_args()
-    main(a.hyps, a.terms, a.top)
+    main()
