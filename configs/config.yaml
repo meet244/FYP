@@ -85,6 +85,12 @@ gating:                       # G, §7.4
 guards:                       # §7.5
   context_echo_ngram: 3
   context_echo_threshold: 0.5 # fraction of hyp n-grams found in the injected context
+  # Length-runaway guard: fall back to the unbiased hypothesis when a grounded decode
+  # emits far more words than the unbiased one did for the same audio. Added after
+  # Tier 2 showed context conditioning tripling insertions while n-gram echo stayed at
+  # zero. Applied identically to every condition.
+  runaway_ratio: 1.75
+  runaway_pad: 3
 
 scoring:
   lexicon: syllabus/index/terms.txt   # frozen; defines B-WER / U-WER membership

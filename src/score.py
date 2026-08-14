@@ -161,6 +161,10 @@ def score_rows(rows: list[dict], lex: Lexicon) -> tuple[dict, list[dict]]:
     if any("guard_context_echo" in r for r in rows):
         m["guard_context_echo_fired"] = fired
         m["guard_context_echo_rate"] = fired / len(rows) if rows else 0.0
+    fired_r = sum(1 for r in rows if r.get("guard_runaway"))
+    if any("guard_runaway" in r for r in rows):
+        m["guard_runaway_fired"] = fired_r
+        m["guard_runaway_rate"] = fired_r / len(rows) if rows else 0.0
     discarded = sum(1 for r in rows if r.get("guard_rewrite_discarded"))
     if any("guard_rewrite_discarded" in r for r in rows):
         m["guard_rewrite_discarded"] = discarded

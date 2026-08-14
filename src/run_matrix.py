@@ -99,7 +99,7 @@ def stage_tune(cfg, tier: str = "tier1") -> None:
 def stage_matrix(cfg, tier: str, skip_m3b: bool = False) -> None:
     """Stage 10 of §11: the full matrix, then statistics and the report."""
     # one decode each, B0 first and completely (§9.2 execution order)
-    for cond in ("B0", "C1", "C2", "C3", "M1", "M2"):
+    for cond in ("B0", "C1", "C2", "C3", "M1", "M2", "C1+M2"):
         run_condition(cond, tier, cfg)
     # ablation rows (decodes, but cheap and informative)
     run_condition("M1", tier, cfg, out_name="M1_glossary", context_style="glossary")

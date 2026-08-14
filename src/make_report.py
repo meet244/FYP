@@ -16,7 +16,7 @@ from pathlib import Path
 import bootstrap
 from common import ROOT, load_config, read_json, write_json
 
-ORDER = ["B0", "C1", "C2", "C3", "M1", "M1_glossary", "M1_utterance", "M2",
+ORDER = ["B0", "C1", "C2", "C3", "M1", "M1_glossary", "M1_utterance", "M2", "C1+M2",
          "M3a", "M3b", "M1+M3a", "M2+M3a", "G"]
 LABEL = {
     "B0": "B0  baseline, no grounding",
@@ -27,6 +27,7 @@ LABEL = {
     "M1_glossary": "M1' glossary-style context (ablation)",
     "M1_utterance": "M1'' per-utterance retrieval (ablation)",
     "M2": "M2  retrieved token-level biasing",
+    "C1+M2": "C1+M2  generic register + syllabus hint terms",
     "M3a": "M3a lexical correction on B0",
     "M3b": "M3b constrained model correction on B0",
     "M1+M3a": "M1+M3a  context + correction",
@@ -63,6 +64,7 @@ def collect(tier: str, baseline: str = "B0", resamples: int = 10000) -> list[dic
             "term_p": m.get("term_precision"), "term_r": m.get("term_recall"),
             "term_f1": m.get("term_f1"),
             "echo_guard_rate": m.get("guard_context_echo_rate"),
+            "runaway_guard_rate": m.get("guard_runaway_rate"),
             "rewrite_discard_rate": m.get("guard_rewrite_discard_rate"),
             "grounded_rate": m.get("grounded_rate"),
         }
@@ -117,13 +119,14 @@ def to_markdown(rows: list[dict], tier: str, cfg) -> str:
         ]) + " |")
 
     head += ["", "## Error composition and guards", "",
-             "| System | sub | ins | del | Term P | Term R | echo-guard rate | rewrite-discard rate | grounded rate |",
-             "|---|--:|--:|--:|--:|--:|--:|--:|--:|"]
+             "| System | sub | ins | del | Term P | Term R | echo-guard | runaway-guard | rewrite-discard | grounded |",
+             "|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|"]
     for r in rows:
         head.append("| " + " | ".join([
             r["run"], _f(r["sub"]), _f(r["ins"]), _f(r["del"]),
             _f(r["term_p"]), _f(r["term_r"]),
-            _f(r.get("echo_guard_rate"), 3), _f(r.get("rewrite_discard_rate"), 3),
+            _f(r.get("echo_guard_rate"), 3), _f(r.get("runaway_guard_rate"), 3),
+            _f(r.get("rewrite_discard_rate"), 3),
             _f(r.get("grounded_rate"), 3)]) + " |")
 
     # Context from the other measured artefacts, so the table is readable alone.

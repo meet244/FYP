@@ -43,6 +43,27 @@ def context_echo_score(hyp: str, context: str | None, n: int = 3) -> float:
     return len(h & c) / len(h)
 
 
+def echo_guard_fires(hyp: str, injected: str | None, n: int = 3,
+                     threshold: float = 0.5) -> tuple[bool, float]:
+    """Decision + evidence, without touching the hypothesis."""
+    score = context_echo_score(hyp, injected, n)
+    return score >= threshold and bool(injected), round(score, 4)
+
+
+def runaway_guard_fires(hyp: str, fallback_hyp: str, max_ratio: float = 1.75,
+                        pad: int = 3) -> tuple[bool, float | None]:
+    """Decision + evidence, without touching the hypothesis.
+
+    Kept separate from the substitution so that several guards can be evaluated against
+    the *same* original hypothesis: applying one guard first would rewrite the output the
+    next guard is supposed to judge, and the second would then never fire.
+    """
+    n_ref = len((fallback_hyp or "").split())
+    n_hyp = len((hyp or "").split())
+    ratio = round(n_hyp / n_ref, 3) if n_ref else None
+    return bool(n_ref and n_hyp > max_ratio * n_ref + pad), ratio
+
+
 def apply_context_echo_guard(row: dict, fallback_hyp: str, n: int = 3,
                              threshold: float = 0.5,
                              injected: str | None = None) -> dict:
@@ -61,6 +82,34 @@ def apply_context_echo_guard(row: dict, fallback_hyp: str, n: int = 3,
     row["guard_context_echo"] = bool(fired)
     if fired:
         row["hyp_before_guard"] = row["hyp"]
+        row["hyp"] = fallback_hyp
+    return row
+
+
+def apply_runaway_guard(row: dict, fallback_hyp: str, max_ratio: float = 1.75,
+                        pad: int = 3) -> dict:
+    """Fall back when a grounded decode produces far more words than the unbiased one.
+
+    The context-echo guard looks for the injected text appearing verbatim in the output.
+    On this corpus that is the wrong thing to measure: conditioning on a syllabus passage
+    did not make the model repeat the passage, it made the model keep *generating* in the
+    passage's register — new terminology that was never spoken. Insertions doubled or
+    tripled while n-gram echo stayed near zero, so the echo guard fired on 2% of
+    utterances while the damage was happening everywhere.
+
+    Output length relative to the unbiased hypothesis catches it directly, and it is a
+    fair test: the two decodes saw identical audio, so a hypothesis far longer than the
+    unbiased one is generating rather than transcribing. Measured on Tier 2, this fires on
+    3-4% of utterances for the context conditions and 0-1 utterances for the baseline,
+    token-biasing and correction conditions — it touches only pathological output.
+    """
+    n_ref = len((fallback_hyp or "").split())
+    n_hyp = len((row.get("hyp") or "").split())
+    row["runaway_ratio"] = round(n_hyp / n_ref, 3) if n_ref else None
+    fired = bool(n_ref and n_hyp > max_ratio * n_ref + pad)
+    row["guard_runaway"] = fired
+    if fired:
+        row.setdefault("hyp_before_guard", row["hyp"])
         row["hyp"] = fallback_hyp
     return row
 

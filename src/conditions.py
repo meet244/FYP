@@ -29,13 +29,14 @@ from pathlib import Path
 from backends import decode_config_from_config, get_backend, model_spec_from_config
 from common import (ROOT, load_config, manifest_for_tier, read_jsonl, run_dir,
                     write_json, write_jsonl)
-from guards import apply_context_echo_guard, apply_rewrite_guard
+from guards import (apply_rewrite_guard, echo_guard_fires,
+                    runaway_guard_fires)
 from lexicon import load_lexicon
 from retrieve import GENERIC_CONTEXT, RetrievalPlan, SyllabusRetriever, random_topic_plan
 from score import score_rows, summary_line
 from transcribe import decode_rows
 
-DECODE_CONDITIONS = ("B0", "C1", "C2", "C3", "M1", "M2")
+DECODE_CONDITIONS = ("B0", "C1", "C2", "C3", "M1", "M2", "C1+M2")
 TEXT_CONDITIONS = ("M3a", "M3b", "M2+M3a", "M1+M3a")
 ALL_CONDITIONS = DECODE_CONDITIONS + TEXT_CONDITIONS + ("G",)
 
@@ -62,15 +63,25 @@ def pass1_index(tier: str, name: str = "B0") -> dict[str, dict]:
 def _guard_all(rows: list[dict], fallback: dict[str, str], cfg) -> list[dict]:
     n = cfg["guards"]["context_echo_ngram"]
     th = cfg["guards"]["context_echo_threshold"]
+    ratio = cfg["guards"].get("runaway_ratio", 1.75)
+    pad = cfg["guards"].get("runaway_pad", 3)
     for row in rows:
+        original = row.get("hyp") or ""
+        fb = fallback.get(row["utt_id"], "")
         # M2 injects hint terms rather than a context string, but they occupy the same
         # prompt slot and can be echoed the same way, so both are guarded.
         injected = row.get("context") or row.get("hotwords")
-        if injected:
-            apply_context_echo_guard(row, fallback.get(row["utt_id"], ""), n, th,
-                                     injected=injected)
-        else:
-            row["guard_context_echo"] = False
+        # Both guards judge the ORIGINAL hypothesis. Applying one before evaluating the
+        # other would let the first rewrite the evidence the second depends on.
+        echo, score = echo_guard_fires(original, injected, n, th)
+        runaway, r_ratio = runaway_guard_fires(original, fb, ratio, pad)
+        row["context_echo_score"] = score
+        row["guard_context_echo"] = echo
+        row["runaway_ratio"] = r_ratio
+        row["guard_runaway"] = runaway
+        if echo or runaway:
+            row["hyp_before_guard"] = original
+            row["hyp"] = fb
     return rows
 
 
@@ -134,14 +145,22 @@ def build_decode_condition(name: str, cfg, rows: list[dict], tier: str,
             return decode_config_from_config(cfg, context=ctxs[row["utt_id"]])
         return cfg_fn, meta, plan.dump()
 
-    if name == "M2":
+    if name in ("M2", "C1+M2"):
         meta["hotword_terms"] = n_terms
         hws = {u: plan.hotwords(u, n_terms) for u in plan.by_utt}
+        # C1+M2 separates the two things a prompt can supply: *register* (that this is
+        # Hindi speech using English technical vocabulary) and *content* (which technical
+        # terms). Tier 2 showed the generic register prompt alone (C1) beating every
+        # syllabus condition, so the question the study now turns on is whether syllabus
+        # terms add anything once register is already handled. This condition answers it.
+        ctx = GENERIC_CONTEXT if name == "C1+M2" else None
+        meta["context"] = ctx
 
         def cfg_fn(row):
-            # §7.2: hotwords only. Setting a prefix would silently disable them, and
+            # §7.2: hotwords, never a prefix — a prefix silently disables them, and
             # DecodeConfig raises if both are supplied.
-            return decode_config_from_config(cfg, hotwords=hws[row["utt_id"]])
+            return decode_config_from_config(cfg, hotwords=hws[row["utt_id"]],
+                                             context=ctx)
         return cfg_fn, meta, plan.dump()
 
     raise ValueError(f"not a decode condition: {name}")
