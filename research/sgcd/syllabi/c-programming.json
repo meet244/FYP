@@ -1,0 +1,68 @@
+{
+ "course_id": "c-programming",
+ "title": "C and C++ programming",
+ "provenance": "generated-from-title",
+ "source_url": null,
+ "units": [
+  {
+   "unit_id": "c-programming-u01",
+   "title": "First C program: compiling and running",
+   "prose": "इस tutorial में हम पहला c program लिखना सीखेंगे। हम main function बनाएंगे, printf से output दिखाएंगे, फिर gcc से compile करके program run करेंगे।",
+   "keywords": ["c program", "main function", "printf", "gcc", "compile", "run", "output", "header file"]
+  },
+  {
+   "unit_id": "c-programming-u02",
+   "title": "Data types, variables and operators",
+   "prose": "इस tutorial में हम data types के बारे में सीखेंगे। हम int, float, char और double variable declare करेंगे तथा arithmetic operator का उपयोग करेंगे।",
+   "keywords": ["data type", "variable", "int", "float", "char", "double", "operator", "declare"]
+  },
+  {
+   "unit_id": "c-programming-u03",
+   "title": "Control flow: if, else and switch",
+   "prose": "इस tutorial में हम decision making सीखेंगे। हम if और else statement लिखेंगे, condition check करेंगे तथा switch case का उपयोग करना देखेंगे।",
+   "keywords": ["if", "else", "condition", "statement", "switch", "case", "break", "decision"]
+  },
+  {
+   "unit_id": "c-programming-u04",
+   "title": "Loops: for, while and do-while",
+   "prose": "इस tutorial में हम loops के बारे में सीखेंगे। हम for loop, while loop और do while loop लिखेंगे तथा break और continue का उपयोग देखेंगे।",
+   "keywords": ["loop", "for loop", "while loop", "do while", "break", "continue", "iteration", "condition"]
+  },
+  {
+   "unit_id": "c-programming-u05",
+   "title": "Functions, arrays and pointers",
+   "prose": "इस tutorial में हम function बनाना सीखेंगे। हम argument pass करेंगे, return value लेंगे, array declare करेंगे तथा pointer से address का उपयोग देखेंगे।",
+   "keywords": ["function", "argument", "return", "array", "pointer", "address", "parameter", "call"]
+  },
+  {
+   "unit_id": "c-programming-u06",
+   "title": "Command line arguments",
+   "prose": "इस tutorial में हम एक उदाहरण से arguments के साथ main function के बारे में सीखेंगे। हम argc और argv का उपयोग करेंगे तथा command line arguments print करेंगे।",
+   "keywords": ["command line arguments", "argc", "argv", "main function", "argument", "print", "terminal", "example"]
+  },
+  {
+   "unit_id": "c-programming-u07",
+   "title": "typedef and union",
+   "prose": "इस tutorial में हम उदाहरण से typedef और union सीखेंगे। हम structure के लिए typedef लिखेंगे और union में memory share होना देखेंगे।",
+   "keywords": ["typedef", "union", "structure", "struct", "member", "memory", "declare", "example"]
+  },
+  {
+   "unit_id": "c-programming-u08",
+   "title": "Storage class specifiers",
+   "prose": "इस tutorial में हम कुछ उदाहरणों की मदद से storage class specifiers सीखेंगे। हम auto, extern, static और register variable का scope तथा lifetime देखेंगे।",
+   "keywords": ["storage class", "specifier", "auto", "extern", "static", "register", "scope", "lifetime"]
+  },
+  {
+   "unit_id": "c-programming-u09",
+   "title": "Strings and character arrays",
+   "prose": "इस tutorial में हम string के बारे में सीखेंगे। हम character array declare करेंगे, scanf और gets से input लेंगे तथा strlen और strcpy function का उपयोग देखेंगे।",
+   "keywords": ["string", "character array", "scanf", "gets", "strlen", "strcpy", "input", "null"]
+  },
+  {
+   "unit_id": "c-programming-u10",
+   "title": "File handling in C",
+   "prose": "इस tutorial में हम file handling सीखेंगे। हम fopen से file खोलेंगे, fprintf और fscanf से data लिखेंगे, फिर fclose करेंगे।",
+   "keywords": ["file handling", "fopen", "fclose", "fprintf", "fscanf", "read", "write", "pointer"]
+  }
+ ]
+}

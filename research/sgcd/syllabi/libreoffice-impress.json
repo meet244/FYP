@@ -1,0 +1,158 @@
+{
+ "course_id": "libreoffice-impress",
+ "title": "LibreOffice Impress — presentation software",
+ "provenance": "generated-from-title",
+ "source_url": null,
+ "units": [
+  {
+   "unit_id": "libreoffice-impress-u01",
+   "title": "Introduction to Impress",
+   "prose": "इस tutorial में हम लिबर ऑफिस impress का परिचय देखेंगे। यह एक presentation software है। हम impress window के भाग जैसे slide pane, task pane, workspace और toolbar देखेंगे।",
+   "keywords": [
+    "impress",
+    "presentation",
+    "slide pane",
+    "task pane",
+    "workspace",
+    "toolbar",
+    "window",
+    "software"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-impress-u02",
+   "title": "Creating a presentation document and basic formatting",
+   "prose": "इस tutorial में हम एक नया प्रस्तुति document बनाना सीखेंगे। हम slide insert और copy करेंगे, फिर text box में font, font size और basic formatting apply करेंगे।",
+   "keywords": [
+    "document",
+    "slide",
+    "insert",
+    "copy",
+    "font",
+    "formatting",
+    "text box",
+    "presentation"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-impress-u03",
+   "title": "Outline view and slide layouts",
+   "prose": "इस tutorial में हम outline view का उपयोग करके presentation की रूपरेखा बनाएंगे। हम अलग-अलग slide layout चुनेंगे और title, content तथा bullet points arrange करेंगे।",
+   "keywords": [
+    "outline",
+    "view",
+    "layout",
+    "title",
+    "content",
+    "bullet",
+    "slide",
+    "arrange"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-impress-u04",
+   "title": "Slide master and slide design",
+   "prose": "इस tutorial में हम slides के लिए background और layout लागू करना सीखेंगे। हम slide master खोलेंगे और slide design चुनेंगे।",
+   "keywords": [
+    "slide master",
+    "slide design",
+    "background",
+    "master page",
+    "layout",
+    "template",
+    "apply",
+    "style"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-impress-u05",
+   "title": "Custom animation",
+   "prose": "इस tutorial में हम impress में custom animation के बारे में सीखेंगे। हम किसी object पर effect add करेंगे, direction और speed set करेंगे तथा animation preview देखेंगे।",
+   "keywords": [
+    "custom animation",
+    "animation",
+    "effect",
+    "object",
+    "direction",
+    "speed",
+    "preview",
+    "add"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-impress-u06",
+   "title": "Slide shows, transitions and automatic shows",
+   "prose": "इस tutorial में हम slide shows चलाना सीखेंगे। हम slide transitions लगाएंगे, timing set करेंगे और rehearse timings से automatic shows तथा loop चलाना देखेंगे।",
+   "keywords": [
+    "slide show",
+    "slide transition",
+    "automatic show",
+    "timing",
+    "rehearse timings",
+    "loop",
+    "run",
+    "transition"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-impress-u07",
+   "title": "Viewing a presentation: view options and master pages",
+   "prose": "इस tutorial में हम view options और उनके उपयोग सीखेंगे। हम normal, outline, notes, handout तथा slide sorter view देखेंगे और master pages का प्रयोग करेंगे।",
+   "keywords": [
+    "view",
+    "normal",
+    "outline",
+    "notes",
+    "handout",
+    "slide sorter",
+    "master pages",
+    "zoom"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-impress-u08",
+   "title": "Presentation notes and handouts",
+   "prose": "इस tutorial में हम notes के बारे में सीखेंगे और उनको print करना देखेंगे। हम notes view में speaker notes लिखेंगे और handout layout चुनेंगे।",
+   "keywords": [
+    "notes",
+    "notes view",
+    "speaker notes",
+    "handout",
+    "print",
+    "layout",
+    "presentation",
+    "page"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-impress-u09",
+   "title": "Printing a presentation",
+   "prose": "इस tutorial में हम प्रिंट करने के विविध options देखेंगे। हम print dialog box खोलेंगे, printer चुनेंगे, slides per page, grayscale और print range set करेंगे।",
+   "keywords": [
+    "print",
+    "print dialog",
+    "printer",
+    "slides per page",
+    "grayscale",
+    "print range",
+    "options",
+    "preview"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-impress-u10",
+   "title": "Inserting tables, charts and images",
+   "prose": "इस tutorial में हम slide में objects डालना सीखेंगे। हम picture insert करेंगे, table बनाएंगे, chart जोड़ेंगे और उनको resize तथा align करना देखेंगे।",
+   "keywords": [
+    "insert",
+    "picture",
+    "image",
+    "table",
+    "chart",
+    "object",
+    "resize",
+    "align"
+   ]
+  }
+ ]
+}

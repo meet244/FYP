@@ -1,0 +1,158 @@
+{
+ "course_id": "libreoffice-writer",
+ "title": "LibreOffice Writer — word processing",
+ "provenance": "generated-from-title",
+ "source_url": null,
+ "units": [
+  {
+   "unit_id": "libreoffice-writer-u01",
+   "title": "Introduction to Writer",
+   "prose": "इस tutorial में हम लिबर ऑफिस writer का परिचय देखेंगे। यह एक word processor है। हम नया document बनाना, open करना, save करना और close करना सीखेंगे।",
+   "keywords": [
+    "writer",
+    "word processor",
+    "document",
+    "open",
+    "save",
+    "close",
+    "file",
+    "new"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-writer-u02",
+   "title": "Typing text and basic formatting",
+   "prose": "इस tutorial में हम document में text type करना सीखेंगे। हम bold, italic, underline लगाएंगे, font name तथा font size बदलेंगे और alignment set करेंगे।",
+   "keywords": [
+    "text",
+    "formatting",
+    "bold",
+    "italic",
+    "underline",
+    "font",
+    "font size",
+    "alignment"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-writer-u03",
+   "title": "Cut, copy, paste and undo",
+   "prose": "इस tutorial में हम text select करना सीखेंगे। हम cut, copy और paste करेंगे, फिर undo तथा redo का उपयोग देखेंगे।",
+   "keywords": [
+    "select",
+    "cut",
+    "copy",
+    "paste",
+    "undo",
+    "redo",
+    "clipboard",
+    "text"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-writer-u04",
+   "title": "Find and replace, and autocorrect",
+   "prose": "इस tutorial में हम find और replace विशेषता सीखेंगे। हम शब्द खोजेंगे, replace all करेंगे और autocorrect तथा autocomplete देखेंगे।",
+   "keywords": [
+    "find",
+    "replace",
+    "replace all",
+    "search",
+    "autocorrect",
+    "autocomplete",
+    "word",
+    "option"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-writer-u05",
+   "title": "Track changes while editing",
+   "prose": "इस tutorial में हम document के संपादन के समय track changes सीखेंगे। हम record changes चालू करेंगे, बदलाव accept या reject करेंगे और comment डालना देखेंगे।",
+   "keywords": [
+    "track changes",
+    "record changes",
+    "accept",
+    "reject",
+    "comment",
+    "edit",
+    "review",
+    "document"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-writer-u06",
+   "title": "Viewing and printing documents",
+   "prose": "इस tutorial में हम document को देखना और print करना सीखेंगे। हम print preview खोलेंगे, page layout देखेंगे, printer चुनेंगे और page range तथा copies set करेंगे।",
+   "keywords": [
+    "print",
+    "print preview",
+    "page layout",
+    "printer",
+    "page range",
+    "copies",
+    "view",
+    "zoom"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-writer-u07",
+   "title": "Creating a newsletter with multiple columns",
+   "prose": "इस tutorial में हम सूचनापत्र बनाना सीखेंगे। हम page को कई columns में बाँटेंगे, column width set करेंगे और newsletter में heading डालेंगे।",
+   "keywords": [
+    "newsletter",
+    "columns",
+    "column width",
+    "page",
+    "heading",
+    "image",
+    "format",
+    "layout"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-writer-u08",
+   "title": "Tables in a document",
+   "prose": "इस tutorial में हम document में table बनाना सीखेंगे। हम row और column insert करेंगे, cell merge तथा split करेंगे और table borders format करेंगे।",
+   "keywords": [
+    "table",
+    "row",
+    "column",
+    "cell",
+    "merge",
+    "split",
+    "border",
+    "insert"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-writer-u09",
+   "title": "Spell check and language tools",
+   "prose": "इस tutorial में हम spelling की जाँच सीखेंगे। हम spell check चलाएंगे, dictionary में शब्द जोड़ेंगे और thesaurus तथा language देखेंगे।",
+   "keywords": [
+    "spell check",
+    "spelling",
+    "dictionary",
+    "thesaurus",
+    "language",
+    "grammar",
+    "check",
+    "word"
+   ]
+  },
+  {
+   "unit_id": "libreoffice-writer-u10",
+   "title": "Headers, footers and page numbering",
+   "prose": "इस tutorial में हम page setup करना सीखेंगे। हम margin बदलेंगे, header और footer डालेंगे, page number insert करेंगे और page break लगाना देखेंगे।",
+   "keywords": [
+    "page setup",
+    "margin",
+    "header",
+    "footer",
+    "page number",
+    "page break",
+    "insert",
+    "layout"
+   ]
+  }
+ ]
+}

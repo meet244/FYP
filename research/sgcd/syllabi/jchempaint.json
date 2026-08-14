@@ -1,0 +1,56 @@
+{
+ "course_id": "jchempaint",
+ "title": "JChemPaint — chemical structure editor",
+ "provenance": "generated-from-title",
+ "source_url": null,
+ "units": [
+  {
+   "unit_id": "jchempaint-u01",
+   "title": "Introduction to JChemPaint",
+   "prose": "इस tutorial में हम jchempaint का परिचय देखेंगे। यह chemical structure बनाने का editor है। हम इसे install करना और नई drawing window खोलना सीखेंगे।",
+   "keywords": ["jchempaint", "chemical structure", "editor", "install", "drawing", "window", "molecule", "software"]
+  },
+  {
+   "unit_id": "jchempaint-u02",
+   "title": "Drawing bonds and atoms",
+   "prose": "इस tutorial में हम structure बनाना सीखेंगे। हम single bond, double bond और triple bond खींचेंगे, atom जोड़ेंगे तथा carbon chain बनाना देखेंगे।",
+   "keywords": ["bond", "single bond", "double bond", "triple bond", "atom", "carbon", "chain", "structure"]
+  },
+  {
+   "unit_id": "jchempaint-u03",
+   "title": "Features of JChemPaint",
+   "prose": "इस tutorial में हम jchempaint की features देखेंगे। हम templates से ring डालेंगे, benzene बनाएंगे, structure को rotate, flip और clean up करना सीखेंगे।",
+   "keywords": ["template", "ring", "benzene", "rotate", "flip", "clean up", "feature", "structure"]
+  },
+  {
+   "unit_id": "jchempaint-u04",
+   "title": "Properties of JChemPaint",
+   "prose": "इस tutorial में हम jchempaint की properties देखेंगे। हम atom का symbol बदलेंगे, charge और isotope set करेंगे तथा molecular formula और mass देखेंगे।",
+   "keywords": ["properties", "symbol", "charge", "isotope", "molecular formula", "mass", "atom", "element"]
+  },
+  {
+   "unit_id": "jchempaint-u05",
+   "title": "Periodic table and functional groups",
+   "prose": "इस tutorial में हम periodic table का उपयोग सीखेंगे। हम element चुनेंगे, hydrogen, oxygen और nitrogen जोड़ेंगे तथा functional group बनाना देखेंगे।",
+   "keywords": ["periodic table", "element", "hydrogen", "oxygen", "nitrogen", "functional group", "select", "atom"]
+  },
+  {
+   "unit_id": "jchempaint-u06",
+   "title": "Editing and selection tools",
+   "prose": "इस tutorial में हम editing tools सीखेंगे। हम select, move, erase और undo का उपयोग करेंगे, structure को copy और paste करेंगे तथा zoom करना देखेंगे।",
+   "keywords": ["select", "move", "erase", "undo", "copy", "paste", "zoom", "tool"]
+  },
+  {
+   "unit_id": "jchempaint-u07",
+   "title": "Saving and exporting structures",
+   "prose": "इस tutorial में हम structure को save करना सीखेंगे। हम mol file और cml format में save करेंगे, image के रूप में export करेंगे तथा file फिर से open करेंगे।",
+   "keywords": ["save", "export", "mol file", "cml", "format", "image", "open", "file"]
+  },
+  {
+   "unit_id": "jchempaint-u08",
+   "title": "Reactions and stereochemistry",
+   "prose": "इस tutorial में हम reaction बनाना सीखेंगे। हम reaction arrow डालेंगे, reactant और product लिखेंगे तथा wedge और hash bond से stereochemistry दिखाना देखेंगे।",
+   "keywords": ["reaction", "arrow", "reactant", "product", "wedge", "hash", "stereochemistry", "bond"]
+  }
+ ]
+}

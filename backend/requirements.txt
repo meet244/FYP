@@ -1,0 +1,29 @@
+# --- web ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# --- persistence ---
+SQLAlchemy==2.0.36
+chromadb==0.5.23
+
+# --- ASR (SGCD) ---
+mlx-whisper==0.4.2 ; sys_platform == "darwin" and platform_machine == "arm64"
+faster-whisper==1.1.1 ; sys_platform != "darwin" or platform_machine != "arm64"
+soundfile==0.12.1
+numpy==1.26.4
+
+# --- retrieval ---
+scikit-learn==1.6.0
+sentence-transformers==3.3.1
+
+# --- ingestion ---
+pypdf==5.1.0
+
+# --- LLM ---
+anthropic==0.42.0
+
+# --- misc ---
+regex==2024.11.6

@@ -1,0 +1,41 @@
+{
+ "_note": "Audit trail for the syllabus provenance. Each lecture's topic was read from its opening (title_source) utterances, which are excluded from the evaluation set in build_manifest.py. Syllabus prose was written from these titles only — never from any scored utterance's reference.",
+ "lectures": {
+  "w5Jyq3XMbb3WwiKQ": {"course": "libreoffice-impress", "title": "Creating a presentation document and basic formatting"},
+  "x8iijxWeCf26KNpC": {"course": "libreoffice-impress", "title": "Custom animation"},
+  "ZQC2TFqLsvNDq9bP": {"course": "libreoffice-impress", "title": "Introduction to Impress"},
+  "FV8hkymGWcy53lrf": {"course": "libreoffice-impress", "title": "Viewing a presentation: view options and master pages"},
+  "K5BlLYB9ynemLTVa": {"course": "libreoffice-impress", "title": "Printing a presentation"},
+  "406yMKxIdSDHRf8H": {"course": "libreoffice-impress", "title": "Slide master and slide design"},
+  "lHGLSlYIb1clRBRF": {"course": "libreoffice-impress", "title": "Presentation notes"},
+  "Bmcrju1ByfdrXE9P": {"course": "libreoffice-impress", "title": "Creating slides: slide shows, transitions, automatic shows"},
+
+  "TkzR0GrQyK0vSTuj": {"course": "libreoffice-writer", "title": "Track changes while editing a document"},
+  "HgEJsLGKNWSFl8T7": {"course": "libreoffice-writer", "title": "Typing text and basic formatting"},
+  "n3lwFhZkSdbJkOa0": {"course": "libreoffice-writer", "title": "Find and replace, and autocorrect"},
+  "RRrEfkw4Rh5TdJkS": {"course": "libreoffice-writer", "title": "Viewing and printing documents"},
+  "nImMxiSAAmCMR3yi": {"course": "libreoffice-writer", "title": "Creating a newsletter with multiple columns"},
+
+  "fpL6MBSZsci9dyAn": {"course": "thunderbird", "title": "How to use Thunderbird"},
+  "Psh5UDSFbhWLZ3gk": {"course": "thunderbird", "title": "Account settings and configuring a Gmail account"},
+  "K8YJLqIcMPJ5GftE": {"course": "thunderbird", "title": "Address book"},
+  "4xyIm2P6Xzlin341": {"course": "thunderbird", "title": "Introduction to Mozilla Thunderbird"},
+
+  "NhV290ew2hDJfVqc": {"course": "gedit", "title": "Snippets in the gedit text editor"},
+  "LPGZ2Jo8uBX4sx76": {"course": "gedit", "title": "Handling tabs in the gedit text editor"},
+  "dNHXkqqVPqWYhzis": {"course": "gedit", "title": "Introduction to the gedit text editor"},
+  "kvxzesc5pGxL6dnk": {"course": "gedit", "title": "Default plugins in the gedit text editor"},
+
+  "aVTioioyNUVPGF4t": {"course": "jchempaint", "title": "Introduction to JChemPaint"},
+  "VU6OA7HUqTpQNtm2": {"course": "jchempaint", "title": "Properties of JChemPaint"},
+  "kGQKLyQ1HtnUNL1d": {"course": "jchempaint", "title": "Features of JChemPaint"},
+
+  "nJfFvNUB8tQkaGgp": {"course": "xfig", "title": "Creating a feedback diagram using Xfig"},
+  "swLUjPHatcTk0wf8": {"course": "xfig", "title": "Embedding mathematics in Xfig"},
+  "jFTbEEy3BCO5axj5": {"course": "xfig", "title": "Creating block diagrams using Xfig"},
+
+  "UO5ZLDtkc8QMi9Hk": {"course": "c-programming", "title": "Command line arguments"},
+  "4oLp3bc9OSJbDrwM": {"course": "c-programming", "title": "typedef and union in C"},
+  "5baFeyjOxK8JQnNG": {"course": "c-programming", "title": "Storage class specifiers"}
+ }
+}

@@ -1,0 +1,8 @@
+.venv/
+data/
+out/hyps/
+out/perutt__*.json
+out/manifest.jsonl
+__pycache__/
+*.pyc
+.DS_Store

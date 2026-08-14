@@ -1,0 +1,128 @@
+{
+ "course_id": "thunderbird",
+ "title": "Mozilla Thunderbird — email client",
+ "provenance": "generated-from-title",
+ "source_url": null,
+ "units": [
+  {
+   "unit_id": "thunderbird-u01",
+   "title": "Introduction to Mozilla Thunderbird",
+   "prose": "इस ट्यूटोरियल में हम मोज़िला thunderbird सीखेंगे। यह एक free email client है। हम इसे install करना और शुरू करना देखेंगे।",
+   "keywords": [
+    "thunderbird",
+    "mozilla",
+    "email client",
+    "install",
+    "free software",
+    "start",
+    "email",
+    "account"
+   ]
+  },
+  {
+   "unit_id": "thunderbird-u02",
+   "title": "Account settings and configuring a Gmail account",
+   "prose": "इस tutorial में हम account settings देखेंगे। हम एक gmail account configure करेंगे, server name, username और password डालेंगे तथा imap और pop settings समझेंगे।",
+   "keywords": [
+    "account settings",
+    "gmail",
+    "configure",
+    "server",
+    "username",
+    "password",
+    "imap",
+    "pop"
+   ]
+  },
+  {
+   "unit_id": "thunderbird-u03",
+   "title": "How to use Thunderbird: composing and sending mail",
+   "prose": "इस tutorial में हम mail लिखना और भेजना सीखेंगे। हम write button दबाएंगे, to और subject field भरेंगे, message type करके send करेंगे।",
+   "keywords": [
+    "compose",
+    "write",
+    "send",
+    "subject",
+    "message",
+    "mail",
+    "recipient",
+    "inbox"
+   ]
+  },
+  {
+   "unit_id": "thunderbird-u04",
+   "title": "Reply, forward and attachments",
+   "prose": "इस tutorial में हम mail का जवाब देना सीखेंगे। हम reply और reply all करेंगे, mail forward करेंगे तथा attachment जोड़ना देखेंगे।",
+   "keywords": [
+    "reply",
+    "reply all",
+    "forward",
+    "attachment",
+    "download",
+    "inbox",
+    "message",
+    "mail"
+   ]
+  },
+  {
+   "unit_id": "thunderbird-u05",
+   "title": "Address book",
+   "prose": "इस ट्यूटोरियल में हम सीखेंगे कि address book से contact कैसे देखें, जोड़ें और delete करें। हम mailing list बनाना भी देखेंगे।",
+   "keywords": [
+    "address book",
+    "contact",
+    "mailing list",
+    "add",
+    "edit",
+    "delete",
+    "collected addresses",
+    "personal"
+   ]
+  },
+  {
+   "unit_id": "thunderbird-u06",
+   "title": "Folders and organising mail",
+   "prose": "इस tutorial में हम mail को व्यवस्थित करना सीखेंगे। हम नया folder बनाएंगे, message को move और copy करेंगे तथा inbox, sent और trash folder देखेंगे।",
+   "keywords": [
+    "folder",
+    "inbox",
+    "sent",
+    "trash",
+    "move",
+    "copy",
+    "organise",
+    "message"
+   ]
+  },
+  {
+   "unit_id": "thunderbird-u07",
+   "title": "Search, filters and junk mail",
+   "prose": "इस tutorial में हम mail खोजना सीखेंगे। हम search bar का उपयोग करेंगे, message filters बनाएंगे और junk mail तथा spam settings देखेंगे।",
+   "keywords": [
+    "search",
+    "filter",
+    "message filter",
+    "junk",
+    "spam",
+    "rule",
+    "settings",
+    "mail"
+   ]
+  },
+  {
+   "unit_id": "thunderbird-u08",
+   "title": "Signatures and message formatting",
+   "prose": "इस tutorial में हम mail को format करना सीखेंगे। हम html और plain text चुनेंगे, font तथा colour बदलेंगे और account में signature जोड़ना देखेंगे।",
+   "keywords": [
+    "signature",
+    "html",
+    "plain text",
+    "format",
+    "font",
+    "colour",
+    "compose",
+    "account"
+   ]
+  }
+ ]
+}

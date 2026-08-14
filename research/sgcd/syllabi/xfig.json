@@ -1,0 +1,128 @@
+{
+ "course_id": "xfig",
+ "title": "Xfig — drawing and diagramming tool",
+ "provenance": "generated-from-title",
+ "source_url": null,
+ "units": [
+  {
+   "unit_id": "xfig-u01",
+   "title": "Introduction to Xfig",
+   "prose": "इस ट्यूटोरियल में हम एक्सफिग xfig का परिचय देखेंगे। यह एक drawing tool है। हम इसका canvas, drawing mode panel और side toolbar देखेंगे।",
+   "keywords": [
+    "xfig",
+    "drawing",
+    "tool",
+    "canvas",
+    "mode panel",
+    "toolbar",
+    "figure",
+    "diagram"
+   ]
+  },
+  {
+   "unit_id": "xfig-u02",
+   "title": "Basic drawing objects",
+   "prose": "इस ट्यूटोरियल में हम आकृतियाँ बनाना सीखेंगे। हम line, box, circle और polygon खींचेंगे तथा colour और line width बदलेंगे।",
+   "keywords": [
+    "line",
+    "box",
+    "circle",
+    "polygon",
+    "arc",
+    "colour",
+    "line width",
+    "object"
+   ]
+  },
+  {
+   "unit_id": "xfig-u03",
+   "title": "Creating block diagrams",
+   "prose": "इस ट्यूटोरियल में हम block diagrams बनाना सीखेंगे। हम box खींचेंगे, उनमें text डालेंगे और arrow से blocks जोड़ेंगे।",
+   "keywords": [
+    "block diagram",
+    "box",
+    "text",
+    "arrow",
+    "connect",
+    "align",
+    "copy",
+    "draw"
+   ]
+  },
+  {
+   "unit_id": "xfig-u04",
+   "title": "Creating a feedback diagram",
+   "prose": "इस ट्यूटोरियल में हम feedback diagram बनाना सीखेंगे। पिछले block diagram में हम summing junction जोड़ेंगे, feedback path खींचेंगे और arrow की direction set करेंगे।",
+   "keywords": [
+    "feedback",
+    "diagram",
+    "block",
+    "summing junction",
+    "path",
+    "arrow",
+    "direction",
+    "loop"
+   ]
+  },
+  {
+   "unit_id": "xfig-u05",
+   "title": "Embedding mathematics in Xfig",
+   "prose": "इस ट्युटोरियल में समझाएंगे कि गणित को xfig में कैसे स्थापित करें। हम latex से equation लिखेंगे और special text flag से math symbol दिखाएंगे।",
+   "keywords": [
+    "mathematics",
+    "equation",
+    "latex",
+    "special text",
+    "symbol",
+    "formula",
+    "embed",
+    "text"
+   ]
+  },
+  {
+   "unit_id": "xfig-u06",
+   "title": "Editing and arranging objects",
+   "prose": "इस ट्यूटोरियल में हम objects को edit करना सीखेंगे। हम move, copy, delete और rotate करेंगे, कई objects को group करेंगे तथा align और scale करना देखेंगे।",
+   "keywords": [
+    "edit",
+    "move",
+    "copy",
+    "delete",
+    "rotate",
+    "group",
+    "align",
+    "scale"
+   ]
+  },
+  {
+   "unit_id": "xfig-u07",
+   "title": "Text, fonts and labels",
+   "prose": "इस ट्यूटोरियल में हम diagram में text जोड़ना सीखेंगे। हम text mode चुनेंगे, font और size बदलेंगे तथा label लिखेंगे।",
+   "keywords": [
+    "text",
+    "font",
+    "size",
+    "label",
+    "justify",
+    "mode",
+    "edit",
+    "diagram"
+   ]
+  },
+  {
+   "unit_id": "xfig-u08",
+   "title": "Saving and exporting figures",
+   "prose": "इस ट्यूटोरियल में हम figure को save करना सीखेंगे। हम fig file save करेंगे, export menu से postscript, eps, pdf और png format में export करेंगे।",
+   "keywords": [
+    "save",
+    "export",
+    "fig file",
+    "postscript",
+    "eps",
+    "pdf",
+    "png",
+    "format"
+   ]
+  }
+ ]
+}

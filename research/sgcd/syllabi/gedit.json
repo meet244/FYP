@@ -1,0 +1,56 @@
+{
+ "course_id": "gedit",
+ "title": "gedit text editor",
+ "provenance": "generated-from-title",
+ "source_url": null,
+ "units": [
+  {
+   "unit_id": "gedit-u01",
+   "title": "Introduction to the gedit text editor",
+   "prose": "इस tutorial में हम gedit text editor के बारे में सीखेंगे। हम ऊबंटु linux और windows os में gedit को संस्थापित करना तथा install करना सीखेंगे।",
+   "keywords": ["gedit", "text editor", "install", "ubuntu", "linux", "windows", "os", "software centre"]
+  },
+  {
+   "unit_id": "gedit-u02",
+   "title": "Creating, opening and saving files",
+   "prose": "इस tutorial में हम gedit में file बनाना सीखेंगे। हम नई file open करेंगे, text लिखेंगे, save as से नाम देंगे और file close करना देखेंगे।",
+   "keywords": ["file", "open", "save", "save as", "new", "close", "text", "document"]
+  },
+  {
+   "unit_id": "gedit-u03",
+   "title": "Handling tabs",
+   "prose": "इस tutorial में हम tabs को add, move, reorder और बंद करना सीखेंगे। हम एक साथ कई file खोलेंगे और tab को नई window में drag करना देखेंगे।",
+   "keywords": ["tab", "add", "move", "reorder", "close", "window", "drag", "file"]
+  },
+  {
+   "unit_id": "gedit-u04",
+   "title": "Default plugins",
+   "prose": "इस tutorial में हम gedit के default plugins जैसे sort, change case, spell checker और insert date and time के बारे में सीखेंगे और उन्हें enable करेंगे।",
+   "keywords": ["plugin", "default plugins", "sort", "change case", "spell checker", "insert date and time", "enable", "preferences"]
+  },
+  {
+   "unit_id": "gedit-u05",
+   "title": "Snippets",
+   "prose": "इस tutorial में हम default snippets का उपयोग सीखेंगे। हम snippets plugin enable करेंगे, tab trigger से code डालेंगे और अपना नया snippet बनाना देखेंगे।",
+   "keywords": ["snippet", "snippets plugin", "tab trigger", "shortcut", "code", "insert", "create", "enable"]
+  },
+  {
+   "unit_id": "gedit-u06",
+   "title": "Search and replace",
+   "prose": "इस tutorial में हम gedit में text खोजना सीखेंगे। हम find का उपयोग करेंगे, replace और replace all करेंगे तथा match case और regular expression option देखेंगे।",
+   "keywords": ["find", "search", "replace", "replace all", "match case", "regular expression", "highlight", "text"]
+  },
+  {
+   "unit_id": "gedit-u07",
+   "title": "Syntax highlighting and preferences",
+   "prose": "इस tutorial में हम gedit की preferences देखेंगे। हम syntax highlighting mode चुनेंगे, line numbers दिखाएंगे, font और colour scheme बदलेंगे तथा tab width set करेंगे।",
+   "keywords": ["preferences", "syntax highlighting", "line numbers", "font", "colour scheme", "tab width", "editor", "view"]
+  },
+  {
+   "unit_id": "gedit-u08",
+   "title": "Printing and shortcuts",
+   "prose": "इस tutorial में हम file को print करना सीखेंगे। हम print preview देखेंगे, page setup करेंगे और keyboard shortcut keys का उपयोग करना सीखेंगे।",
+   "keywords": ["print", "print preview", "page setup", "keyboard", "shortcut", "keys", "file", "document"]
+  }
+ ]
+}

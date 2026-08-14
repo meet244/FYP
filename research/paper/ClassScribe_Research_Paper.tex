@@ -1,0 +1,664 @@
+%=====================================================================
+%  Syllabus-Grounded Contextual Decoding for Code-Switched
+%  Classroom Speech Transcription and Automated Note Generation
+%
+%  IEEEtran conference format. Target length: 6 pages.
+%  COMPILE:  pdflatex ClassScribe_Research_Paper.tex   (run twice)
+%
+%  TO INSERT ARTWORK: replace \figplace{...}{...} with
+%      \includegraphics[width=\columnwidth]{figures/yourfile.png}
+%  full width:  \includegraphics[width=\textwidth]{figures/yourfile.png}
+%=====================================================================
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{graphicx}
+
+% centred fixed-width column, used for the author grid
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+
+% ---- placeholder boxes that RESERVE SPACE for artwork ----------------
+\newcommand{\figplace}[2]{%
+  \setlength{\fboxsep}{0pt}%
+  \fbox{\begin{minipage}[c][#1][c]{\dimexpr\columnwidth-2\fboxrule\relax}
+    \centering\scriptsize\itshape\color{gray}#2
+  \end{minipage}}%
+}
+\newcommand{\figplacewide}[2]{%
+  \setlength{\fboxsep}{0pt}%
+  \fbox{\begin{minipage}[c][#1][c]{\dimexpr\textwidth-2\fboxrule\relax}
+    \centering\scriptsize\itshape\color{gray}#2
+  \end{minipage}}%
+}
+\newcommand{\figpanel}[3]{%
+  \setlength{\fboxsep}{0pt}%
+  \fbox{\begin{minipage}[c][#2][c]{#1}
+    \centering\scriptsize\itshape\color{gray}#3
+  \end{minipage}}%
+}
+
+\begin{document}
+
+\title{Syllabus-Grounded Contextual Decoding for\\
+Code-Switched Classroom Speech Transcription and\\
+Automated Study-Note Generation}
+
+%--------------------------------------------------------------------
+% AUTHORS -- edit as required.
+%--------------------------------------------------------------------
+% Six authors laid out as a balanced 3 x 2 grid. Using an explicit tabular
+% instead of \and, because \and wraps automatically and strands the last row.
+\author{%
+\small
+\begin{tabular}{C{0.31\textwidth}C{0.31\textwidth}C{0.31\textwidth}}
+Meet Patel\newline
+Information Technology\newline
+SVKM's DJSCE\newline
+Mumbai, India\newline
+meet2005pokar@gmail.com
+&
+Vinay Vora\newline
+Information Technology\newline
+SVKM's DJSCE\newline
+Mumbai, India\newline
+voravinay6@gmail.com
+&
+Manav Chudasama\newline
+Information Technology\newline
+SVKM's DJSCE\newline
+Mumbai, India\newline
+manavchudasama2005@gmail.com
+% \tabularnewline (not \\) ends the ROW: inside a p-column, \\ is only an
+% in-cell line break, which is why the optional spacing was being ignored.
+\tabularnewline[3ex]
+Pranay Mistry\newline
+Information Technology\newline
+SVKM's DJSCE\newline
+Mumbai, India\newline
+pranaymistry21@gmail.com
+&
+Mohit Nippanikar\newline
+Information Technology\newline
+SVKM's DJSCE\newline
+Mumbai, India\newline
+rnippanikar7@gmail.com
+&
+Neha Katre\newline
+Information Technology\newline
+SVKM's DJSCE\newline
+Mumbai, India\newline
+neha.katre@djsce.ac.in
+\end{tabular}%
+}
+
+\maketitle
+
+%=====================================================================
+\begin{abstract}
+Classroom instruction in Indian higher education is routinely delivered in
+code-switched Hindi--English, with technical terminology in English embedded in a
+Hindi matrix. General-purpose speech recognition transcribes such lectures
+poorly: domain terms are misrecognised and English vocabulary is frequently
+rendered in Devanagari rather than Latin script, making transcripts unusable as
+study material. This paper presents ClassScribe, a system that records lectures,
+transcribes them and generates structured study notes with a subject-wise
+knowledge assistant. Its technical contribution is Syllabus-Grounded Contextual
+Decoding (SGCD), a training-free method that conditions a pre-trained decoder on
+course-syllabus material rendered as fluent code-mixed narration rather than as
+terminology lists, selected per utterance by sparse retrieval. On the MUCS 2021
+Hindi--English corpus, narrative conditioning reduces word error rate by 6.23
+points and technical-term error by 55.5\% relative on lecture-length spans,
+whereas terminology-list conditioning degrades word error rate by 19.39 points
+despite improving term recognition. A mismatched-syllabus control shows most of
+the gain arises from orthographic and register conditioning rather than syllabus
+content, a distinction not previously isolated for code-switched lecture ASR.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Automatic Speech Recognition, Code-Switching, Contextual Decoding, Hindi--English,
+Lecture Transcription, Educational Technology, Note Generation.
+\end{IEEEkeywords}
+
+%=====================================================================
+\section{Introduction}
+
+Students in Indian higher education rely heavily on lecture notes for revision,
+yet manual note-taking forces a trade-off: a student who writes cannot fully
+attend, and one who attends retains no durable record. Automatic transcription
+followed by automatic structuring is an attractive alternative, and has become
+plausible with large-scale weakly supervised speech models such as Whisper
+\cite{radford2023whisper}.
+
+The Indian classroom makes this harder than the English lecture-transcription
+literature suggests. Instruction is delivered in a code-switched register whose
+matrix language is Hindi while the embedded technical vocabulary is English. A
+sentence such as ``\textit{is tutorial mein hum file permissions samjhenge}''
+carries its pedagogical content entirely in the English fragment. Two failure
+modes follow. First, technical terminology---precisely what a student needs---is
+the vocabulary least well covered by general-purpose acoustic models. Second, the
+model must choose an orthography for each token, and a multilingual model
+inclined toward Hindi transliterates English terms into Devanagari, producing
+forms such as \textit{skreen} for \textit{screen}. Such a transcript is not
+merely penalised by metrics; it is materially less useful, since technical terms
+are no longer searchable in canonical form.
+
+A resource addressing both failure modes already exists in every institution and
+is systematically unused: the course syllabus. It enumerates, before delivery,
+the topics to be covered and the vocabulary in which they are expressed. It needs
+no annotation and is written by the instructor. This paper asks whether that
+document can be supplied to a pre-trained decoder as auxiliary context, and what
+form it must take to help rather than harm.
+
+The question is not rhetorical. Prior work shows that naively injecting target
+terms into the decoder's context channel improves those terms while degrading
+everything else, worsening aggregate error on most datasets evaluated
+\cite{sun2023contextual}. The implicated mechanism is distribution mismatch: the
+channel is trained to receive the transcript of preceding speech, not a keyword
+enumeration. Any method supplying syllabus content must respect that form.
+
+Our contributions are: (i) \textbf{ClassScribe}, a system that records lectures,
+produces code-switched transcripts, derives study notes and learning outcomes,
+and exposes a conversational interface over a student's own lecture corpus;
+(ii) \textbf{SGCD}, a training-free decoding procedure rendering syllabus units as
+code-mixed narration matching the target dual-script convention, selected by
+character $n$-gram TF--IDF retrieval over a first-pass hypothesis and protected by
+a stability safeguard; (iii) a controlled evaluation separating the contribution
+of \textit{representation format} from \textit{semantic content} using a
+mismatched-syllabus control; and (iv) characterisation of the interaction between
+context utility and utterance duration, with cross-model validation.
+
+%=====================================================================
+\section{Literature Survey}
+
+\subsection{Lecture Capture and Code-Switched ASR}
+
+Commercial services such as Otter.ai and platform-native live captions provide
+real-time transcription and have been adopted in higher education, but are
+optimised for monolingual conversational speech, offer limited configurability for
+domain vocabulary, and process audio on remote infrastructure, raising
+data-governance concerns when classroom recordings including student
+contributions leave institutional control.
+
+Code-switching, the alternation between languages within an utterance, is
+pervasive in Indian educational discourse and is documented as difficult for
+systems trained on monolingual corpora \cite{sitaram2019survey}. The MUCS 2021
+challenge \cite{diwan2021mucs} targeted low-resource Indian-language ASR and
+included a code-switching subtask with Hindi--English data drawn from spoken
+technical tutorials, released as OpenSLR SLR104 \cite{openslr104}. To our
+knowledge it is the only public, sentence-aligned Hindi--English code-switched
+corpus whose audio is technical instructional content, making it the natural
+vehicle for a syllabus-conditioned method.
+
+An under-discussed property of code-switched Indic transcription is orthographic
+ambiguity. SLR104 references follow a dual-script convention---Hindi in
+Devanagari, English technical terms in Latin. A model given no indication of this
+convention must guess, and its errors are systematic rather than random, hence in
+principle correctable by conditioning. We quantify this with a script-fidelity
+metric in Section~V.
+
+\subsection{Contextual Adaptation and Research Gaps}
+
+Contextual biasing steers recognition toward known relevant terms. Earlier
+architectures used shallow fusion or attention over a biasing vocabulary, as in
+Deep Context \cite{pundak2018deepcontext} and trie-based deep biasing for
+streaming transducers \cite{le2021contextualized}. These require access to model
+internals and usually training of a biasing module, placing them beyond
+institutions deploying a pre-trained model without ML infrastructure.
+
+For encoder--decoder models an alternative exists: conditioning the decoder on
+preceding textual context at inference time, with no parameter updates. Peng et
+al. \cite{peng2023prompting} showed this channel can elicit untrained task
+behaviours. Sun et al. \cite{sun2023contextual} evaluated it for rare-word
+biasing and reported the result motivating our design: a biasing list reduced
+rare-word error from 23.7\% to 18.0\% and out-of-vocabulary error from 60\% to
+37.1\%, but increased error on non-biased words on every dataset tested, with
+aggregate error worsening on six of eleven.
+
+Three gaps follow. Existing training-free methods are evaluated with term-list
+representations known to degrade aggregate accuracy, and the representation
+question is not itself treated as an object of study. Evaluations are almost
+entirely monolingual English, leaving the code-switched case---where orthography
+compounds vocabulary---unexamined. Finally, published evaluations rarely include
+a control distinguishing a genuine content effect from a format effect; without
+one, an improvement attributed to domain knowledge may be attributable to the
+model being nudged into the correct output register. SGCD addresses all three.
+
+%=====================================================================
+\section{Proposed Methodology}
+
+\subsection{System Overview}
+
+ClassScribe begins with classroom audio and a course syllabus and terminates in
+structured study material. The pipeline comprises audio acquisition and
+segmentation; syllabus ingestion; first-pass transcription; contextual unit
+retrieval; syllabus-grounded second-pass decoding with a stability safeguard; and
+note synthesis with indexed retrieval for conversational query. Fig.~1 shows the
+system architecture and the interfaces between these modules.
+
+\begin{figure*}[htbp]
+\centering
+\figplacewide{6.2cm}{[ Fig. 1 --- System Architecture of ClassScribe ]\\[3pt]
+Replace with: \texttt{\textbackslash includegraphics[width=\textbackslash textwidth]\{figures/fig1\_architecture.png\}}\\[4pt]
+Suggested contents: recording client $\rightarrow$ segmentation $\rightarrow$ first-pass decoder $\rightarrow$
+syllabus index (TF--IDF) $\rightarrow$ context assembly $\rightarrow$ second-pass decoder $\rightarrow$
+stability safeguard $\rightarrow$ note synthesis / outcome extraction $\rightarrow$ vector store $\rightarrow$ chat interface}
+\caption{System Architecture of ClassScribe}
+\label{fig:arch}
+\end{figure*}
+
+Audio is captured at 16~kHz mono and partitioned into spans bounded by the
+30-second encoder receptive field, so each span is decoded in a single forward
+pass and the auxiliary context applies uniformly across it. Section~V-D shows
+span duration is not an incidental detail but a determinant of whether
+conditioning works at all; spans of approximately 25~seconds are used.
+
+\subsection{Syllabus Representation}
+
+Each course is represented as an ordered list of units, a unit $u_i$ being the
+triple $(t_i, d_i, K_i)$ of title, narrative description and terminology set. The
+design of $d_i$ is the core of the method, governed by three constraints derived
+from the decoder's context behaviour.
+
+\textit{Register and orthography.} $d_i$ is written as flowing instructional
+narration in the target dual-script convention, Hindi function words in
+Devanagari and English technical terms in Latin. This conveys the expected output
+convention in addition to the expected vocabulary.
+
+\textit{Terminal weighting.} Later context tokens influence generation more than
+earlier ones. The most distinctive terminology is therefore placed at the end of
+$d_i$, and multiple units are ordered by ascending relevance so the most relevant
+terminates the context.
+
+\textit{Budget.} The channel admits a bounded token count. Measured with the
+model's own tokeniser, code-mixed narration costs approximately three tokens per
+word, so each $d_i$ is authored at 60--105 tokens and the assembled context is
+truncated from the left at 200 tokens, preserving the terminal region.
+
+\subsection{Two-Pass Contextual Retrieval}
+
+Choosing which units to supply requires knowing the utterance topic, which is
+circular at decode time. An unconditioned first pass yields a hypothesis $h$ that
+need not be accurate, only lexically indicative. Each unit is indexed as
+$t_i \Vert d_i \Vert K_i$ under a character $n$-gram TF--IDF representation with
+$n\in[3,5]$, and scored by cosine similarity:
+\begin{equation}
+s(u_i, h) = \frac{\phi(t_i \Vert d_i \Vert K_i)\cdot\phi(h)}
+{\lVert \phi(t_i \Vert d_i \Vert K_i)\rVert\, \lVert \phi(h)\rVert}
+\end{equation}
+where $\phi(\cdot)$ is the TF--IDF projection. The $k$ highest-scoring units are
+emitted in ascending order of $s$.
+
+Character $n$-grams are preferred to word tokens for two reasons specific to this
+setting: code-mixed text exhibits inconsistent transliteration, so word matching
+fails on orthographic variants; and the first-pass hypothesis is by construction
+noisy, requiring a representation that degrades gracefully. A sparse index is also
+negligible against a neural encoder, needing no model download and operating in
+milliseconds. Fig.~2 shows the resulting workflow.
+
+\begin{figure}[htbp]
+\centering
+\figplace{5.0cm}{[ Fig. 2 --- Syllabus-Grounded Contextual Decoding Workflow ]\\[3pt]
+Replace with:\\ \texttt{\textbackslash includegraphics[width=\textbackslash columnwidth]\{figures/fig2\_sgcd.png\}}}
+\caption{Syllabus-Grounded Contextual Decoding Workflow}
+\label{fig:sgcd}
+\end{figure}
+
+\subsection{Stability Safeguard}
+
+Conditioning is not uniformly beneficial per utterance. Inspection shows two
+opposing effects: it repairs degenerate repetition present in unconditioned
+output, and it also induces such repetition, where generation continues the
+register of the supplied narration instead of terminating. The system therefore
+accepts the conditioned hypothesis only when decoding remained stable. With
+$\ell_c,\ell_u$ the mean token log-probabilities of conditioned and unconditioned
+hypotheses, $r_c$ the compression ratio and $|\cdot|$ length in words, the
+unconditioned hypothesis is substituted when any of
+\begin{equation}
+\ell_c < \ell_u - \delta, \qquad
+r_c > \rho, \qquad
+|h_c| > \lambda\,|h_u|
+\end{equation}
+holds, with $\delta,\rho,\lambda$ fitted on a development partition and frozen
+before evaluation.
+
+\subsection{Note Synthesis and Conversational Retrieval}
+
+The corrected transcript is segmented topically and converted into a structured
+note comprising a topic hierarchy, definitions of encountered terminology and
+learning outcomes expressed as competency statements. Because the syllabus unit
+for each span is already known from retrieval, notes are attached to the unit
+they instantiate, yielding coverage tracking: the system reports which units have
+been delivered and which remain outstanding. Transcript spans and notes are
+embedded in a vector index keyed by subject and lecture; the conversational
+interface answers queries by retrieving relevant spans and grounding its response
+in them, citing the originating lecture and timestamp so any statement can be
+verified against the recording.
+
+The complete method requires no training, annotation or auxiliary acoustic model,
+and costs one supplementary decoding pass, since retrieval reuses the first-pass
+hypothesis the baseline produces anyway.
+
+%=====================================================================
+\section{System Implementation}
+
+The system is a client--server application with a Python backend. The
+transcription service wraps a pre-trained multilingual encoder--decoder speech
+model executed through a hardware-accelerated runtime for Apple silicon
+\cite{hannun2023mlx}, enabling the full evaluation suite to run on a single
+consumer laptop at 5.5--15.7$\times$ real time. Sparse retrieval uses
+scikit-learn; scoring and alignment use \texttt{jiwer}. Persistence is provided by
+a relational store for lecture metadata, syllabi and notes, with a vector index
+for transcript spans. Because transcription executes locally, classroom audio need
+not leave institutional infrastructure, addressing the governance objection to
+cloud services noted in Section~II-A. Fig.~3 shows the dashboard, the recording
+and transcription view, the generated notes, and the conversational interface.
+
+\begin{figure*}[htbp]
+\centering
+\figpanel{0.48\textwidth}{4.6cm}{[ (a) Dashboard --- subject overview ]\\[2pt]
+\texttt{\textbackslash includegraphics[width=0.48\textbackslash textwidth]\{figures/fig3a\_dashboard.png\}}}
+\hfill
+\figpanel{0.48\textwidth}{4.6cm}{[ (b) Lecture recording and transcript ]\\[2pt]
+\texttt{\textbackslash includegraphics[width=0.48\textbackslash textwidth]\{figures/fig3b\_recording.png\}}}\\[6pt]
+\figpanel{0.48\textwidth}{4.6cm}{[ (c) Generated notes and learning outcomes ]\\[2pt]
+\texttt{\textbackslash includegraphics[width=0.48\textbackslash textwidth]\{figures/fig3c\_notes.png\}}}
+\hfill
+\figpanel{0.48\textwidth}{4.6cm}{[ (d) Subject-wise conversational interface ]\\[2pt]
+\texttt{\textbackslash includegraphics[width=0.48\textbackslash textwidth]\{figures/fig3d\_chat.png\}}}
+\caption{ClassScribe interface: (a) subject dashboard, (b) lecture recording and
+code-switched transcript, (c) generated study notes and learning outcomes,
+(d) subject-wise conversational assistant.}
+\label{fig:ui}
+\end{figure*}
+
+%=====================================================================
+\section{Experimental Evaluation}
+
+\subsection{Dataset and Protocol}
+
+Evaluation uses the Hindi--English code-switched test partition of MUCS 2021
+subtask-2 \cite{diwan2021mucs}, released as OpenSLR SLR104 \cite{openslr104}
+under CC~BY-SA~4.0. The audio consists of spoken technical tutorials, so a
+syllabus is a natural rather than contrived context source. The partition
+comprises 30 lectures; after filtering to utterances of 2--28~s with at least
+four reference words, 3073 utterances remain, totalling 5.06~hours.
+
+All experiments are zero-shot; no component is trained on this corpus and the
+training partition is never used, so the train/test overlap reported for this
+corpus does not apply. Lectures are partitioned disjointly: 30\% form a
+development partition used solely for selecting decoding configuration, and the
+remainder an evaluation partition decoded once, after configuration was frozen.
+Stratified sampling proportional to lecture size with a fixed seed yields 60
+development and 150 evaluation utterances.
+
+Because the corpus encodes no topic identifiers, each lecture's subject was
+identified from its opening utterances, which announce the tutorial topic; those
+utterances are excluded from the evaluation sample, so no scored utterance
+contributed to constructing any syllabus. Seven syllabi covering 62 units were
+authored from lecture titles alone, with no access to any reference transcript of
+any scored utterance.
+
+\subsection{Evaluation Metrics}
+
+Aggregate word error rate (WER) cannot distinguish improvement on domain
+terminology from degradation elsewhere, so we decompose it. With $R$ the
+reference tokens and $K \subset R$ those matching the syllabus terminology
+vocabulary, \textbf{K-WER} is the error rate over $K$ and \textbf{U-WER} that
+over $R \setminus K$. \textbf{Script fidelity} is the proportion of Latin-script
+reference tokens recovered exactly, measuring adherence to the dual-script
+convention. We also report \textbf{WER\textsubscript{sa}}, a
+transliteration-tolerant variant reducing both scripts to a common consonant
+skeleton, so a term recognised correctly but written in the other script is not
+penalised; it is a lower bound on error where strict WER is an upper bound.
+Significance uses paired bootstrap resampling over utterances
+\cite{koehn2004significance} with 10{,}000 resamples, reporting 95\% confidence
+intervals on the difference in corpus error rate.
+
+\subsection{Conditioning Strategies}
+
+Three strategies form the primary comparison: \textbf{A}, unconditioned baseline;
+\textbf{B}, terminology enumeration, the syllabus term sets as a delimited list;
+and \textbf{C}, narrative representation, identical content as fluent code-mixed
+narration. Four further conditions serve as controls: \textbf{D}, retrieved
+narrative (SGCD), restricted to the $k=3$ units retrieved per utterance;
+\textbf{E}, mismatched syllabus, as D but drawn from a \textit{different} course,
+identical in length, register and construction with only the content wrong;
+\textbf{F}, oracle retrieval against the reference, an upper bound reported as
+topline only; and \textbf{G}, a register control consisting of one generic
+code-mixed sentence with no course content, isolating pure format conditioning.
+
+\begin{table*}[htbp]
+\caption{Comparison of Conditioning Strategies on Utterance-Level Segments (150 utterances, mean 5.7~s)}
+\label{tab:main}
+\centering
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+\textbf{Strategy} & \textbf{WER (\%)} & \textbf{WER\textsubscript{sa} (\%)} &
+\textbf{K-WER (\%)} & \textbf{U-WER (\%)} & \textbf{Script Fid. (\%)} &
+\textbf{$\Delta$WER vs. A [95\% CI]} \\
+\hline
+A --- Unconditioned            & 85.69  & 71.87  & 65.53 & 43.50 & 32.6 & --- \\
+B --- Terminology enumeration  & 136.22 & 118.43 & \textbf{31.55} & 53.18 & 60.9 & $+50.53$ $[+16.55, +90.94]$ \\
+C --- Narrative representation & 99.35  & 88.81  & 33.50 & \textbf{41.68} & 60.0 & $+13.66$ $[-7.70, +35.35]$ \\
+\hline
+G --- Register control (no content) & 102.32 & 90.48 & 55.83 & 44.38 & 41.6 & $+16.63$ $[-3.61, +36.66]$ \\
+D --- Retrieved narrative (SGCD)    & 90.80  & 81.27 & 35.44 & 41.95 & 58.8 & $+5.11$ $[-13.24, +23.28]$ \\
+E --- Mismatched syllabus           & 87.71  & 77.62 & 35.92 & 40.19 & 58.6 & $+2.02$ $[-13.98, +18.98]$ \\
+F --- Oracle retrieval (topline)    & 95.61  & 85.64 & 29.61 & 40.53 & 62.1 & $+9.92$ $[-10.49, +30.23]$ \\
+D + stability safeguard             & \textbf{71.50} & \textbf{61.28} & 35.44 & 41.14 & 58.1 & $\mathbf{-14.19}$ $[-26.55, -4.79]$ \\
+\hline
+\end{tabular}
+\end{table*}
+
+\subsection{Results}
+
+Table~I reports the primary comparison on the 150-utterance sample, mean duration
+5.7~s. Terminology enumeration reproduces the published failure mode
+\cite{sun2023contextual} in a new language setting: K-WER falls from 65.53\% to
+31.55\%, a 51.9\% relative improvement on exactly the targeted vocabulary, while
+U-WER rises from 43.50\% to 53.18\% and aggregate WER degrades by 50.53 points
+with a confidence interval excluding zero. Since non-terminology tokens dominate
+any utterance, the aggregate outcome follows the degradation. Narrative
+representation attains an equivalent terminology gain, K-WER 33.50\%, while
+reversing the collateral damage: U-WER falls to 41.68\%, below baseline. The
+direct contrast is $-36.88$ points $[-75.64, -5.18]$ favouring narrative form.
+Representation, not content volume, governs whether syllabus context is usable.
+
+The absolute error rates in Table~I are high. Two corpus properties account for
+this: segment boundaries are quantised to whole seconds, so fragments of adjacent
+utterances intrude; and the mean segment of 5.7~s affords a context mechanism
+little material to influence. We therefore built a secondary set by concatenating
+strictly adjacent segments of the same lecture into spans bounded by the encoder
+receptive field, yielding 100 spans averaging 26.2~s and 55.1 reference words
+against approximately 12 previously. This analysis followed the primary
+evaluation and is reported as a post-hoc experiment.
+
+\begin{table*}[htbp]
+\caption{Comparison of Conditioning Strategies on Lecture-Length Spans (100 spans, mean 26.2~s)}
+\label{tab:long}
+\centering
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+\textbf{Strategy} & \textbf{WER (\%)} & \textbf{WER\textsubscript{sa} (\%)} &
+\textbf{K-WER (\%)} & \textbf{U-WER (\%)} & \textbf{Script Fid. (\%)} &
+\textbf{$\Delta$WER vs. A [95\% CI]} \\
+\hline
+A --- Unconditioned            & 43.46 & 28.05 & 48.04 & 34.64 & 48.0 & --- \\
+B --- Terminology enumeration  & 62.86 & 47.69 & 23.00 & 46.42 & 70.3 & $+19.39$ $[+7.13, +33.06]$ \\
+C --- Narrative representation & \textbf{37.23} & \textbf{24.17} & 21.38 & \textbf{32.42} & \textbf{71.6} & $\mathbf{-6.23}$ $[-10.59, -1.97]$ \\
+\hline
+D --- Retrieved narrative (SGCD) & 38.64 & 25.53 & \textbf{21.24} & 33.94 & 70.0 & $-4.83$ $[-9.21, -0.53]$ \\
+E --- Mismatched syllabus        & 39.56 & 26.40 & 25.44 & 33.91 & 67.3 & $-3.91$ $[-8.53, +0.61]$ \\
+\hline
+\end{tabular}
+\end{table*}
+
+Table~II shows baseline error approximately halves, from 85.69\% to 43.46\%,
+confirming the primary table's magnitudes were inflated by segmentation artefacts
+rather than by the method. At this span length the picture is unambiguous:
+narrative conditioning reduces WER by 6.23 points $[-10.59, -1.97]$, terminology
+error falls 55.5\% relative, and script fidelity rises from 48.0\% to 71.6\%.
+Terminology enumeration remains harmful at $+19.39$ points $[+7.13, +33.06]$, and
+the contrast between representations, $-25.62$ $[-39.28, -13.50]$, is
+significant. Every contrast in Table~II excludes zero. The method therefore
+requires realistic lecture-length spans, a deployment constraint rather than a
+limitation of validity, since a classroom system controls its own segmentation.
+
+\subsection{Content Specificity}
+
+The mismatched control decomposes the benefit into format and content components.
+On lecture-length spans the matched syllabus yields $-4.83$ points and the
+mismatched syllabus $-3.91$. Content specificity therefore accounts for $-0.92$
+points $[-3.53, +1.34]$, approximately 19\% of the effect, with an interval
+including zero. The register control G is decisive in interpretation: a single
+generic code-mixed sentence with no course content raises script fidelity from
+32.6\% to 41.6\%, and any syllabus-derived context, matched or not, raises it to
+roughly 60\%. The dominant mechanism is communication of the target output
+convention---English terminology in Latin script within a Devanagari
+matrix---rather than of which specific terms will occur.
+
+This is a negative result with respect to the motivating hypothesis and we report
+it as such. Its practical implication is favourable: a deployment does not need an
+accurate per-lecture syllabus to obtain most of the benefit, lowering the barrier
+to adoption. Its scientific implication is that evaluations omitting a mismatched
+control cannot distinguish semantic grounding from register conditioning.
+Resolving a 0.92-point effect at the observed variance would require roughly 700
+spans, the full five-hour partition, which we identify as the decisive follow-up.
+
+\subsection{Cross-Model Validation and Safeguard}
+
+Repeating the conditions on a smaller model of the same family preserves the
+qualitative ordering (Table~III): enumeration is catastrophic, narrative
+representation beneficial, and their relative ranking unchanged. The smaller model
+is almost entirely script-blind, achieving 1.6\% script fidelity unconditioned and
+misrecognising 99.5\% of terminology, and conditioning is the only intervention
+recovering canonical orthography. At this scale the matched syllabus does
+outperform the mismatched by 17.52 points, though the interval spans zero. A
+plausible reading, advanced as hypothesis rather than finding, is that content
+specificity matters when a model is too weak to produce terminology unaided,
+whereas for a stronger model only the output convention remains to be supplied.
+
+\begin{table}[htbp]
+\caption{Cross-Model Validation (150 utterances)}
+\label{tab:crossmodel}
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Strategy} & \textbf{WER (\%)} & \textbf{K-WER (\%)} & \textbf{Script Fid. (\%)} \\
+\hline
+A --- Unconditioned            & 171.50 & 99.51 & 1.6 \\
+B --- Terminology enumeration  & 330.76 & 40.29 & 46.7 \\
+C --- Narrative representation & 148.81 & 80.58 & 20.5 \\
+D --- Retrieved narrative      & \textbf{143.23} & \textbf{74.27} & \textbf{23.7} \\
+E --- Mismatched syllabus      & 160.75 & 88.35 & 16.0 \\
+\hline
+\end{tabular}}
+\end{table}
+
+On utterance-level segments the safeguard reverted 12.7\% of hypotheses,
+converting the $+5.11$ regression of condition D into a $-14.19$ improvement
+$[-26.55, -4.79]$ and reducing degraded utterances from 34\% to 24\%. Two
+limitations apply: the gain concentrates in a few catastrophically degenerate
+utterances rather than spreading across the corpus, and the thresholds do not
+transfer across scales---applied unchanged to the smaller model the safeguard
+fired on 46\% of utterances and degraded results, so thresholds must be refitted
+per checkpoint. On lecture-length spans the safeguard is unnecessary, as condition
+C attains a significant improvement without it.
+
+\subsection{Threats to Validity}
+
+The evaluation uses one corpus of scripted tutorial narration, more fluent than
+spontaneous lecturing. Absolute error rates are inflated by whole-second segment
+quantisation and are not comparable with published figures for this corpus. The
+samples of 150 utterances and 100 spans are small, reflected in interval widths,
+and the content-specificity question in particular is underpowered. Syllabi are
+generated from lecture titles rather than published course outlines; although no
+scored utterance contributed to their construction, syllabi authored by a language
+model constitute a confound that institutionally published outlines would remove.
+
+%=====================================================================
+\section{Conclusion and Future Scope}
+
+This paper presented ClassScribe, a system converting code-switched classroom
+lectures into structured study notes and an interactive knowledge base, together
+with SGCD, a training-free method for supplying syllabus material to a
+pre-trained speech decoder. The principal finding concerns representation:
+supplying terminology as an enumeration improves the enumerated terms by roughly
+half while degrading everything else, so aggregate error worsens substantially,
+whereas identical content rendered as fluent code-mixed narration achieves the
+same terminology gain with no collateral damage, reducing word error by 6.23
+points and terminology error by 55.5\% relative on lecture-length spans. The
+determining factor is whether auxiliary context matches the distribution the
+decoder was trained to receive. Controlled analysis further shows most of this
+benefit conveys the dual-script output convention rather than syllabus semantics,
+a syllabus from an unrelated course capturing roughly 81\% of the improvement.
+
+Future work should re-examine content specificity at the scale identified in
+Section~V-E, evaluate on spontaneous rather than scripted classroom speech,
+replace the safeguard with a threshold-free criterion avoiding per-checkpoint
+calibration, and assess the note-generation and conversational components against
+learning outcomes with student participants, since transcription accuracy is a
+proxy for, not a measure of, educational utility.
+
+%=====================================================================
+\begin{thebibliography}{00}
+
+\bibitem{radford2023whisper}
+A. Radford, J. W. Kim, T. Xu, G. Brockman, C. McLeavey, and I. Sutskever,
+``Robust Speech Recognition via Large-Scale Weak Supervision,'' in
+\textit{Proc. 40th Int. Conf. on Machine Learning (ICML)}, 2023, pp. 28492--28518.
+
+\bibitem{sun2023contextual}
+G. Sun, X. Zheng, C. Zhang, and P. C. Woodland, ``Can Contextual Biasing Remain
+Effective with Whisper and GPT-2?,'' in \textit{Proc. Interspeech}, 2023,
+pp. 1289--1293.
+
+\bibitem{peng2023prompting}
+P. Peng, B. Yan, S. Watanabe, and D. Harwath, ``Prompting the Hidden Talent of
+Web-Scale Speech Models for Zero-Shot Task Generalization,'' in
+\textit{Proc. Interspeech}, 2023, pp. 396--400.
+
+\bibitem{hannun2023mlx}
+A. Hannun, J. Digani, A. Katharopoulos, and R. Collobert, ``MLX: Efficient and
+Flexible Machine Learning on Apple Silicon,'' 2023. [Online]. Available:
+\url{https://github.com/ml-explore/mlx}
+
+\bibitem{diwan2021mucs}
+A. Diwan, R. Vaideeswaran, S. Shah, A. Singh, S. Raghavan, S. Khare, V. Unni,
+S. Vyas, A. Rajpuria, C. Yarra, A. Mittal, P. K. Ghosh, P. Jyothi, K. Bali,
+V. Seshadri, S. Sitaram, S. Bharadwaj, J. Nanavati, R. Nanavati, and
+K. Sankaranarayanan, ``MUCS 2021: Multilingual and Code-Switching ASR Challenges
+for Low Resource Indian Languages,'' in \textit{Proc. Interspeech}, 2021,
+pp. 2446--2450.
+
+\bibitem{le2021contextualized}
+D. Le, M. Jain, G. Keren, S. Kim, Y. Shi, J. Mahadeokar, J. Chan, Y. Shangguan,
+C. Fuegen, O. Kalinli, Y. Saraf, and M. L. Seltzer, ``Contextualized Streaming
+End-to-End Speech Recognition with Trie-Based Deep Biasing and Shallow Fusion,''
+in \textit{Proc. Interspeech}, 2021, pp. 1772--1776.
+
+\bibitem{openslr104}
+``OpenSLR SLR104: Multilingual and Code-Switching ASR Challenge Dataset,
+Subtask-2,'' Open Speech and Language Resources, 2021. [Online]. Available:
+\url{https://www.openslr.org/104/}
+
+\bibitem{sitaram2019survey}
+S. Sitaram, K. R. Chandu, S. K. Rallabandi, and A. W. Black, ``A Survey of
+Code-switched Speech and Language Processing,'' \textit{arXiv preprint
+arXiv:1904.00784}, 2019.
+
+\bibitem{pundak2018deepcontext}
+G. Pundak, T. N. Sainath, R. Prabhavalkar, A. Kannan, and D. Zhao, ``Deep
+Context: End-to-End Contextual Speech Recognition,'' in \textit{IEEE Spoken
+Language Technology Workshop (SLT)}, 2018, pp. 418--425.
+
+\end{thebibliography}
+
+\end{document}
