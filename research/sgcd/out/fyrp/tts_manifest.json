@@ -1,0 +1,602 @@
+[
+ {
+  "utt_id": "tts_000",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_000.wav",
+  "ref": "syntax highlighting को select करें"
+ },
+ {
+  "utt_id": "tts_001",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_001.wav",
+  "ref": "page number को select करें"
+ },
+ {
+  "utt_id": "tts_002",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_002.wav",
+  "ref": "यहाँ direction option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_003",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_003.wav",
+  "ref": "इस tutorial में हम static के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_004",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_004.wav",
+  "ref": "यहाँ function option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_005",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_005.wav",
+  "ref": "हम impress window के भाग जैसे slide pane task pane workspace और toolbar देखेंगे"
+ },
+ {
+  "utt_id": "tts_006",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_006.wav",
+  "ref": "इस tutorial में हम tabs को add move reorder और बंद करना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_007",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_007.wav",
+  "ref": "यहाँ autocorrect option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_008",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_008.wav",
+  "ref": "इस tutorial में हम print preview के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_009",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_009.wav",
+  "ref": "इस tutorial में हम arrange के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_010",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_010.wav",
+  "ref": "हम print dialog box खोलेंगे printer चुनेंगे slides per page grayscale और print range set करेंगे"
+ },
+ {
+  "utt_id": "tts_011",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_011.wav",
+  "ref": "हम element चुनेंगे hydrogen oxygen और nitrogen जोड़ेंगे तथा functional group बनाना देखेंगे"
+ },
+ {
+  "utt_id": "tts_012",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_012.wav",
+  "ref": "toolbar को select करें"
+ },
+ {
+  "utt_id": "tts_013",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_013.wav",
+  "ref": "हम इसे install करना और नई drawing window खोलना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_014",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_014.wav",
+  "ref": "हम print preview खोलेंगे page layout देखेंगे printer चुनेंगे और page range तथा copies set करेंगे"
+ },
+ {
+  "utt_id": "tts_015",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_015.wav",
+  "ref": "इस ट्यूटोरियल में हम आकृतियाँ बनाना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_016",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_016.wav",
+  "ref": "यहाँ compile option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_017",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_017.wav",
+  "ref": "इस tutorial में हम snippet के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_018",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_018.wav",
+  "ref": "अब हम speaker notes पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_019",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_019.wav",
+  "ref": "अब हम wedge पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_020",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_020.wav",
+  "ref": "इस tutorial में हम terminal के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_021",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_021.wav",
+  "ref": "हम record changes चालू करेंगे बदलाव accept या reject करेंगे और comment डालना देखेंगे"
+ },
+ {
+  "utt_id": "tts_022",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_022.wav",
+  "ref": "अब हम single bond पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_023",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_023.wav",
+  "ref": "हम slide transitions लगाएंगे timing set करेंगे और rehearse timings से automatic shows तथा loop चलाना देखेंगे"
+ },
+ {
+  "utt_id": "tts_024",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_024.wav",
+  "ref": "हम spell check चलाएंगे dictionary में शब्द जोड़ेंगे और thesaurus तथा language देखेंगे"
+ },
+ {
+  "utt_id": "tts_025",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_025.wav",
+  "ref": "इस tutorial में हम gedit की preferences देखेंगे"
+ },
+ {
+  "utt_id": "tts_026",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_026.wav",
+  "ref": "इस tutorial में हम run के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_027",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_027.wav",
+  "ref": "यहाँ loop option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_028",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_028.wav",
+  "ref": "हम text mode चुनेंगे font और size बदलेंगे तथा label लिखेंगे"
+ },
+ {
+  "utt_id": "tts_029",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_029.wav",
+  "ref": "float को select करें"
+ },
+ {
+  "utt_id": "tts_030",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_030.wav",
+  "ref": "इस tutorial में हम output के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_031",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_031.wav",
+  "ref": "इस tutorial में हम slide shows चलाना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_032",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_032.wav",
+  "ref": "हम syntax highlighting mode चुनेंगे line numbers दिखाएंगे font और colour scheme बदलेंगे तथा tab width set करेंगे"
+ },
+ {
+  "utt_id": "tts_033",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_033.wav",
+  "ref": "diagram को select करें"
+ },
+ {
+  "utt_id": "tts_034",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_034.wav",
+  "ref": "recipient को select करें"
+ },
+ {
+  "utt_id": "tts_035",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_035.wav",
+  "ref": "इस tutorial में हम install के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_036",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_036.wav",
+  "ref": "इस tutorial में हम send के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_037",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_037.wav",
+  "ref": "charge को select करें"
+ },
+ {
+  "utt_id": "tts_038",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_038.wav",
+  "ref": "cml को select करें"
+ },
+ {
+  "utt_id": "tts_039",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_039.wav",
+  "ref": "यहाँ settings option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_040",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_040.wav",
+  "ref": "इस tutorial में हम mass के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_041",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_041.wav",
+  "ref": "इस tutorial में हम data types के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_042",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_042.wav",
+  "ref": "grammar को select करें"
+ },
+ {
+  "utt_id": "tts_043",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_043.wav",
+  "ref": "हम move copy delete और rotate करेंगे कई objects को group करेंगे तथा align और scale करना देखेंगे"
+ },
+ {
+  "utt_id": "tts_044",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_044.wav",
+  "ref": "अब हम arrow पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_045",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_045.wav",
+  "ref": "इस tutorial में हम mail के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_046",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_046.wav",
+  "ref": "strlen को select करें"
+ },
+ {
+  "utt_id": "tts_047",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_047.wav",
+  "ref": "अब हम fscanf पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_048",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_048.wav",
+  "ref": "canvas को select करें"
+ },
+ {
+  "utt_id": "tts_049",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_049.wav",
+  "ref": "इस tutorial में हम string के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_050",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_050.wav",
+  "ref": "यहाँ language option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_051",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_051.wav",
+  "ref": "regular expression को select करें"
+ },
+ {
+  "utt_id": "tts_052",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_052.wav",
+  "ref": "write को select करें"
+ },
+ {
+  "utt_id": "tts_053",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_053.wav",
+  "ref": "अब हम start पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_054",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_054.wav",
+  "ref": "इस tutorial में हम slides के लिए background और layout लागू करना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_055",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_055.wav",
+  "ref": "अब हम comment पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_056",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_056.wav",
+  "ref": "यहाँ block option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_057",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_057.wav",
+  "ref": "इस tutorial में हम account settings देखेंगे"
+ },
+ {
+  "utt_id": "tts_058",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_058.wav",
+  "ref": "यहाँ preferences option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_059",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_059.wav",
+  "ref": "यहाँ path option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_060",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_060.wav",
+  "ref": "इस tutorial में हम structure बनाना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_061",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_061.wav",
+  "ref": "यहाँ move option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_062",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_062.wav",
+  "ref": "अब हम union पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_063",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_063.wav",
+  "ref": "यहाँ rule option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_064",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_064.wav",
+  "ref": "अब हम page range पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_065",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_065.wav",
+  "ref": "इस tutorial में हम gmail के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_066",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_066.wav",
+  "ref": "अब हम linux पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_067",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_067.wav",
+  "ref": "इस tutorial में हम impress में custom animation के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_068",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_068.wav",
+  "ref": "अब हम word पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_069",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_069.wav",
+  "ref": "यहाँ text editor option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_070",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_070.wav",
+  "ref": "यहाँ reject option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_071",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_071.wav",
+  "ref": "condition को select करें"
+ },
+ {
+  "utt_id": "tts_072",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_072.wav",
+  "ref": "यहाँ apply option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_073",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_073.wav",
+  "ref": "अब हम header पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_074",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_074.wav",
+  "ref": "अब हम extern पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_075",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_075.wav",
+  "ref": "इस tutorial में हम copy के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_076",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_076.wav",
+  "ref": "हम bold italic underline लगाएंगे font name तथा font size बदलेंगे और alignment set करेंगे"
+ },
+ {
+  "utt_id": "tts_077",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_077.wav",
+  "ref": "इस tutorial में हम attachment के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_078",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_078.wav",
+  "ref": "speed को select करें"
+ },
+ {
+  "utt_id": "tts_079",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_079.wav",
+  "ref": "यहाँ option option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_080",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_080.wav",
+  "ref": "अब हम timing पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_081",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_081.wav",
+  "ref": "इस ट्यूटोरियल में हम block diagrams बनाना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_082",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_082.wav",
+  "ref": "हम margin बदलेंगे header और footer डालेंगे page number insert करेंगे और page break लगाना देखेंगे"
+ },
+ {
+  "utt_id": "tts_083",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_083.wav",
+  "ref": "हम argc और argv का उपयोग करेंगे तथा command line arguments print करेंगे"
+ },
+ {
+  "utt_id": "tts_084",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_084.wav",
+  "ref": "organise को select करें"
+ },
+ {
+  "utt_id": "tts_085",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_085.wav",
+  "ref": "इस tutorial में हम view options और उनके उपयोग सीखेंगे"
+ },
+ {
+  "utt_id": "tts_086",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_086.wav",
+  "ref": "यहाँ font option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_087",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_087.wav",
+  "ref": "अब हम animation पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_088",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_088.wav",
+  "ref": "undo को select करें"
+ },
+ {
+  "utt_id": "tts_089",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_089.wav",
+  "ref": "triple bond को select करें"
+ },
+ {
+  "utt_id": "tts_090",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_090.wav",
+  "ref": "अब हम draw पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_091",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_091.wav",
+  "ref": "इस ट्युटोरियल में समझाएंगे कि गणित को xfig में कैसे स्थापित करें"
+ },
+ {
+  "utt_id": "tts_092",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_092.wav",
+  "ref": "इस tutorial में हम font size के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_093",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_093.wav",
+  "ref": "decision को select करें"
+ },
+ {
+  "utt_id": "tts_094",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_094.wav",
+  "ref": "इस tutorial में हम workspace के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_095",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_095.wav",
+  "ref": "इस tutorial में हम tool के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_096",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_096.wav",
+  "ref": "इस tutorial में हम account settings के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_097",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_097.wav",
+  "ref": "इस tutorial में हम सूचनापत्र बनाना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_098",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_098.wav",
+  "ref": "अब हम address पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_099",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_099.wav",
+  "ref": "यहाँ spell checker option दिखाई देता है"
+ },
+ {
+  "utt_id": "tts_100",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_100.wav",
+  "ref": "message filter को select करें"
+ },
+ {
+  "utt_id": "tts_101",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_101.wav",
+  "ref": "argc को select करें"
+ },
+ {
+  "utt_id": "tts_102",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_102.wav",
+  "ref": "इस tutorial में हम decision making सीखेंगे"
+ },
+ {
+  "utt_id": "tts_103",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_103.wav",
+  "ref": "drag को select करें"
+ },
+ {
+  "utt_id": "tts_104",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_104.wav",
+  "ref": "इस tutorial में हम notes के बारे में सीखेंगे और उनको print करना देखेंगे"
+ },
+ {
+  "utt_id": "tts_105",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_105.wav",
+  "ref": "इस tutorial में हम document में table बनाना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_106",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_106.wav",
+  "ref": "हम reaction arrow डालेंगे reactant और product लिखेंगे तथा wedge और hash bond से stereochemistry दिखाना देखेंगे"
+ },
+ {
+  "utt_id": "tts_107",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_107.wav",
+  "ref": "इस tutorial में हम spelling के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_108",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_108.wav",
+  "ref": "इस tutorial में हम mozilla के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_109",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_109.wav",
+  "ref": "पिछले block diagram में हम summing junction जोड़ेंगे feedback path खींचेंगे और arrow की direction set करेंगे"
+ },
+ {
+  "utt_id": "tts_110",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_110.wav",
+  "ref": "हम notes view में speaker notes लिखेंगे और handout layout चुनेंगे"
+ },
+ {
+  "utt_id": "tts_111",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_111.wav",
+  "ref": "अब हम paste पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_112",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_112.wav",
+  "ref": "इस tutorial में हम download के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_113",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_113.wav",
+  "ref": "हम row और column insert करेंगे cell merge तथा split करेंगे और table borders format करेंगे"
+ },
+ {
+  "utt_id": "tts_114",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_114.wav",
+  "ref": "इस tutorial में हम jchempaint की properties देखेंगे"
+ },
+ {
+  "utt_id": "tts_115",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_115.wav",
+  "ref": "अब हम gedit पर click करेंगे"
+ },
+ {
+  "utt_id": "tts_116",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_116.wav",
+  "ref": "यह एक word processor है"
+ },
+ {
+  "utt_id": "tts_117",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_117.wav",
+  "ref": "इस ट्यूटोरियल में हम objects को edit करना सीखेंगे"
+ },
+ {
+  "utt_id": "tts_118",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_118.wav",
+  "ref": "इस tutorial में हम mol file के बारे में सीखेंगे"
+ },
+ {
+  "utt_id": "tts_119",
+  "wav": "/Users/vinay/vscode/FYP/FYP/research/sgcd/out/fyrp/tts/tts_119.wav",
+  "ref": "इस tutorial में हम automatic show के बारे में सीखेंगे"
+ }
+]

@@ -1,0 +1,15 @@
+{
+  "model": "parakeet",
+  "repo": "mlx-community/parakeet-rnnt-1.1b",
+  "backend": "parakeet",
+  "note": "NVIDIA Parakeet RNNT 1.1B (MLX)",
+  "split": "test",
+  "n": 150,
+  "audio_s": 862.0,
+  "decode_s": 65.4,
+  "wall_s": 65.5,
+  "rtf": 0.0759,
+  "xrealtime": 13.18,
+  "peak_rss_gb": 0.99,
+  "language": "Hindi"
+}

@@ -6,3 +6,6 @@ out/manifest.jsonl
 __pycache__/
 *.pyc
 .DS_Store
+out/segwav/
+out/fyrp/tts/
+out/fyrp/hyps/

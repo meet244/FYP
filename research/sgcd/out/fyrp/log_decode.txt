@@ -1,0 +1,9 @@
+[done] S0_baseline__test: 50 utts in 90s
+[done] S0_baseline__tune: 30 utts in 40s
+[done] S3_prompt__test: 50 utts in 206s
+[done] S5_nbest__tune: 271s
+[done] S5_nbest__test: 426s
+[done] S6_fusion_l0.1__tune: 30 utts in 50s
+[done] S6_fusion_l0.3__tune: 30 utts in 52s
+S6 dev grid {0.0: 0.36486486486486486, 0.1: 0.3621621621621622, 0.3: 0.41081081081081083} -> lambda=0.1
+[done] S6_fusion__test: 50 utts in 89s

@@ -1,0 +1,162 @@
+=== emb 09:52:30
+    upd 10/50  loss=0.762  146s
+    upd 20/50  loss=0.855  1030s
+    upd 30/50  loss=0.544  2973s
+    upd 40/50  loss=0.701  3058s
+    upd 50/50  loss=0.859  3129s
+[train] S7_embtune {'new_tokens': 14, 'trained_params': 14336, 'examples': 100, 'epochs': 2, 'lr': 0.0005, 'train_s': 3128.7}
+[done] S7_embtune__test: 50 utts in 198s
+=== tts 10:48:15
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+    upd 10/20  loss=0.153  25s
+    upd 20/20  loss=0.164  53s
+[train] S8_ttsaug {'trained_params': 62923776, 'examples': 80, 'epochs': 1, 'lr': 2e-05, 'train_s': 52.7}
+[done] S8_ttsaug__test: 50 utts in 190s
+=== partial 10:55:21
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/chat_template.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/audio_tokenizer_config.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 1s [Retry 1/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 2s [Retry 2/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 4s [Retry 3/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 8s [Retry 4/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+Retrying in 8s [Retry 5/5].
+'[Errno 8] nodename nor servname provided, or not known' thrown while requesting HEAD https://huggingface.co/Qwen/Qwen3-ASR-0.6B-hf/resolve/main/preprocessor_config.json
+    upd 10/45  loss=0.371  28s
+    upd 20/45  loss=0.567  45s
+    upd 30/45  loss=0.380  60s
+    upd 40/45  loss=0.307  76s
+    upd 45/45  loss=0.130  83s
+[train] S9_partialft {'trained_params': 62923776, 'examples': 180, 'epochs': 1, 'lr': 2e-05, 'train_s': 82.8}
+[done] S9_partialft__test: 50 utts in 203s
+=== lora 11:26:41
+    upd 10/45  loss=0.348  21s
+    upd 20/45  loss=0.426  46s
+    upd 30/45  loss=0.265  180s
+    upd 40/45  loss=0.249  201s
+    upd 45/45  loss=0.119  211s
+[train] S10_lora {'lora_modules': 92, 'trained_params': 1662976, 'examples': 180, 'epochs': 1, 'lr': 0.0002, 'train_s': 210.7}
+[done] S10_lora__test: 50 utts in 203s
+ALLDONE 11:33:55
