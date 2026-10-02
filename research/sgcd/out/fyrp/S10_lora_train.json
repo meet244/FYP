@@ -1,0 +1,8 @@
+{
+ "lora_modules": 92,
+ "trained_params": 1662976,
+ "examples": 180,
+ "epochs": 1,
+ "lr": 0.0002,
+ "train_s": 210.7
+}

@@ -1,0 +1,15 @@
+{
+  "model": "wlv3",
+  "repo": "mlx-community/whisper-large-v3-mlx",
+  "backend": "mlx_whisper",
+  "note": "Whisper large-v3 (fp16 MLX)",
+  "split": "test",
+  "n": 150,
+  "audio_s": 862.0,
+  "decode_s": 655.9,
+  "wall_s": 656.1,
+  "rtf": 0.7609,
+  "xrealtime": 1.31,
+  "peak_rss_gb": 0.61,
+  "language": "Hindi"
+}

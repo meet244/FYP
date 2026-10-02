@@ -1,0 +1,8 @@
+{
+ "new_tokens": 14,
+ "trained_params": 14336,
+ "examples": 100,
+ "epochs": 2,
+ "lr": 0.0005,
+ "train_s": 3128.7
+}

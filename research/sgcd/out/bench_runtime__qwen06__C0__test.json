@@ -1,0 +1,15 @@
+{
+  "model": "qwen06",
+  "repo": "Qwen/Qwen3-ASR-0.6B-hf",
+  "backend": "qwen",
+  "note": "Qwen3-ASR-0.6B (torch/MPS)",
+  "split": "test",
+  "n": 150,
+  "audio_s": 862.0,
+  "decode_s": 292.0,
+  "wall_s": 292.2,
+  "rtf": 0.3388,
+  "xrealtime": 2.95,
+  "peak_rss_gb": 1.41,
+  "language": "Hindi"
+}

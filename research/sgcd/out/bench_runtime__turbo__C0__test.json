@@ -1,0 +1,15 @@
+{
+  "model": "turbo",
+  "repo": "mlx-community/whisper-large-v3-turbo",
+  "backend": "mlx_whisper",
+  "note": "Whisper large-v3-turbo (MLX)",
+  "split": "test",
+  "n": 150,
+  "audio_s": 862.0,
+  "decode_s": 197.5,
+  "wall_s": 197.5,
+  "rtf": 0.2291,
+  "xrealtime": 4.36,
+  "peak_rss_gb": 0.58,
+  "language": "Hindi"
+}

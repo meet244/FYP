@@ -373,3 +373,96 @@ not needed for a significant gain.
 
 
 
+
+---
+
+## 2026-09-01 — Cross-model ASR benchmark (5 checkpoints, zero-prompt)
+
+**Git:** `6dad8ea` · **Hardware:** MacBook Air M3, 8 GB unified memory, macOS 26.6
+**Data:** SLR104 Hindi–English TEST, frozen `manifest.jsonl`, n=150 lecture-disjoint
+utterances, 862.0 s audio (mean 5.75 s). Same seed/filters as the SGCD study.
+
+```bash
+./run_bench_all.sh                       # fetch + decode + score, one process per model
+python src/bench_report.py --split test
+```
+
+New code: `src/bench_asr.py` (multi-backend decode → study-compatible hyp cache),
+`src/bench_report.py` (accuracy + speed + memory table), `run_bench_all.sh`.
+
+All models decoded **zero-prompt** — the only condition comparable across
+Whisper's `initial_prompt`, Qwen's `prompt=` hotwords, and Parakeet's no-context
+transducer. Whisper kept the study's frozen C0 settings (`language="hi"`,
+`temperature=0.0`, `condition_on_previous_text=False`); Qwen used
+`language="Hindi"`; Parakeet has no language control.
+
+| Model | WER % | WER-sa % | CER % | K-WER % | U-WER % | script fid % | RTF | x RT | peak RSS GB |
+|---|---|---|---|---|---|---|---|---|---|
+| Qwen3-ASR-0.6B (torch/MPS) | **59.74** | 50.39 | **50.49** | 44.66 | 39.92 | 47.2 | 0.339 | 2.95 | 1.41 |
+| Qwen3-ASR-1.7B (torch/MPS) | 63.24 | **47.94** | 57.26 | 92.23 | **39.45** | 8.4 | 1.209 | 0.83 | 1.26 |
+| Whisper large-v3 (fp16 MLX) | 74.17 | 61.94 | 62.39 | 63.59 | 42.63 | 34.4 | 0.761 | 1.31 | 0.61 |
+| Whisper large-v3-turbo (MLX) | 80.23 | 66.61 | 65.62 | 65.53 | 43.71 | 32.8 | 0.229 | 4.36 | 0.58 |
+| Parakeet RNNT 1.1B (MLX) | 97.45 | 81.93 | 81.53 | **37.86** | 91.54 | **58.8** | 0.076 | 13.18 | 0.99 |
+
+**Harness validation.** turbo C0 K-WER = 65.53% here vs 65.5% logged for the
+2026-08 TEST run — the rebuilt manifest reproduces the frozen eval set exactly.
+
+**Findings.**
+
+1. **Qwen3-ASR-0.6B wins on strict WER by 14.4 points over the best Whisper.**
+   The gap is concentrated in keywords (K-WER 44.7 vs 63.6) and script fidelity
+   (47.2% vs 34.4%), not in ordinary words (U-WER 39.9 vs 42.6). This is a
+   training-data effect, not capacity: scaling turbo→large-v3 buys 6.1 points,
+   switching model family buys 14.4.
+
+2. **The 1.7B's strict WER is a script artifact, not a recognition failure.**
+   Forced to `language="Hindi"` it transliterates every English technical term
+   into Devanagari ("वन इंडेक्स वन" for "one index one"), collapsing script
+   fidelity to 8.4% and K-WER to 92.2%. Its **WER-sa of 47.94 is the best of all
+   five**, and its U-WER (39.45) is also the best — it hears the most and writes
+   it in the wrong alphabet for this corpus. Untested: whether auto-detect
+   (`--language none`) preserves Latin script. `run_lang_variants.sh` is written
+   and ready; the run was interrupted before producing output.
+
+3. **Parakeet's K-WER (37.86%, best in table) and script fidelity (58.8%, best)
+   are metric artifacts and must not be read as quality.** It is English-only
+   (`nvidia/parakeet-rnnt-1.1b` is tagged `en`; no multilingual 1.1B RNNT exists,
+   and no Parakeet of any size supports Hindi). It transcribes English spans
+   accurately and renders Devanagari spans as Latin phonetic noise — U-WER 91.54%
+   is the honest figure. It wins K-WER because syllabus keywords are ~all English,
+   and wins script fidelity because it cannot emit Devanagari at all.
+
+4. **Speed ranking is inverse to nothing useful.** Parakeet 13.2x RT, turbo 4.4x,
+   Qwen-0.6B 3.0x, large-v3 1.3x, Qwen-1.7B 0.83x — the 1.7B is *slower than
+   realtime* on this machine and unusable for batch lecture transcription here.
+
+**Implication for ClassScribe.** The pipeline's ASR backend (currently Whisper
+turbo) should move to Qwen3-ASR-0.6B: ~20 WER points on this corpus at 3x
+realtime in 1.4 GB. Qwen exposes a `prompt=` context slot, so the SGCD
+syllabus-grounding method transfers — but every SGCD number would need re-running,
+since those results are Whisper-prompt-specific.
+
+**Caveat.** Absolute WERs are inflated by the 2–28 s utterance segmentation
+(see the `testcat` 26 s pseudo-utterance run, where baseline WER roughly halves).
+Rankings, not levels, are what this table supports.
+
+
+## FYRP — 10 independent improvement methods on Qwen3-ASR-0.6B (2026-10-01)
+
+Code: `src/fyrp_{exp,asr,lm,lexicon}.py`, driver `run_fyrp.sh`. Test = 50 utts (every 3rd of frozen 150-utt TEST eval set); tune = 30 DEV utts; training/LM/glossary text = DEV-split lectures only (0 lecture overlap with TEST). Each method applied alone to the baseline. Full table + settings: `out/fyrp/results.md`.
+
+| Rank | Step | Method | WER % | Word Acc % | ΔWER vs base (95% CI) | CER % | WER-sa % | K-WER % | U-WER % | RTF |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | S5 | N-best rescoring with domain n-gram LM | 55.69 | 44.31 | -3.18 [-6.3, -0.2] | 43.84 | 47.14 | 42.17 | 34.95 | 1.36 |
+| 2 | S8 | TTS synthetic data (partial FT on TTS only) | 55.85 | 44.15 | -3.01 [-6.8, +0.8] | 43.78 | 50.34 | 20.48 | 39.03 | 0.61 |
+| 3 | S3 | Context biasing via system prompt | 57.36 | 42.64 | -1.51 [-4.8, +1.3] | 46.73 | 48.99 | 49.40 | 34.95 | 0.66 |
+| 4 | S4 | BM25 retrieval-constrained span correction | 58.03 | 41.97 | -0.84 [-2.0, +0.2] | 46.29 | 49.83 | 48.19 | 35.73 | 0.29 |
+| 5 | S0 | Baseline (Qwen3-ASR-0.6B, greedy, no context) | 58.86 | 41.14 | — | 46.70 | 50.00 | 50.60 | 36.31 | 0.29 |
+| 6 | S7 | Embedding-only tuning (tokenizer expansion) | 58.86 | 41.14 | +0.00 [+0.0, +0.0] | 46.70 | 50.00 | 50.60 | 36.31 | 0.63 |
+| 7 | S1 | Fuzzy / edit-distance lexicon correction | 58.86 | 41.14 | +0.00 [-0.8, +0.8] | 46.79 | 49.83 | 49.40 | 36.50 | 0.29 |
+| 8 | S6 | Shallow fusion (n-gram LM in decoding) | 60.03 | 39.97 | +1.17 [-1.8, +4.4] | 49.65 | 50.67 | 62.65 | 36.12 | 0.29 |
+| 9 | S2 | Phonetic matching for code-switched OOV | 60.37 | 39.63 | +1.51 [-0.5, +3.5] | 46.79 | 51.01 | 42.17 | 39.42 | 0.29 |
+| 10 | S10 | LoRA r=8 enc+dec attention (real+TTS) | 62.21 | 37.79 | +3.34 [-9.0, +22.3] | 48.67 | 56.06 | 39.76 | 38.83 | 0.65 |
+| 11 | S9 | Partial FT, last-4 decoder layers (real+TTS) | 67.22 | 32.78 | +8.36 [-0.6, +18.9] | 55.56 | 58.59 | 31.33 | 40.39 | 0.65 |
+
+Notes: S7 output identical to baseline on 50/50 (14 new tokens never emitted). S9/S10 best K-WER but 3/2 repetition-loop runaways inflate WER — next run should add `repetition_penalty`/length guard. S2 helped DEV (-1.9) but hurt TEST (+1.5): 30-utt tune set too small. Only S5 CI excludes 0.

@@ -1,0 +1,7 @@
+{
+ "trained_params": 62923776,
+ "examples": 80,
+ "epochs": 1,
+ "lr": 2e-05,
+ "train_s": 52.7
+}
