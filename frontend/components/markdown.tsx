@@ -47,7 +47,7 @@ function inline(text: string, onCitation?: (n: number) => void): React.ReactNode
             type="button"
             onClick={() => onCitation(n)}
             title={`Jump to source ${n}`}
-            className="mx-0.5 inline-flex h-[1.15em] min-w-[1.15em] items-center justify-center rounded-[0.3em] bg-primary/15 px-1 align-super text-[0.7em] font-bold text-primary transition-colors hover:bg-primary/30"
+            className="mx-0.5 inline-flex h-[1.15em] min-w-[1.15em] items-center justify-center border border-border bg-muted px-1 align-super text-[0.7em] font-medium text-foreground transition-colors hover:border-foreground/40"
           >
             {n}
           </button>
@@ -163,7 +163,7 @@ export function Markdown({ children, className, onCitation }: MarkdownProps) {
     if (bullet.test(line) || ordered.test(line)) {
       const isOrdered = ordered.test(line)
       const items: string[] = []
-      while (i < lines.length && (bullet.test(lines[i]) || ordered.test(lines[i]))) {
+      while (i < lines.length && (isOrdered ? ordered.test(lines[i]) : bullet.test(lines[i]))) {
         const m = isOrdered ? ordered.exec(lines[i]) : bullet.exec(lines[i])
         items.push(isOrdered ? m![2] : m![1])
         i++

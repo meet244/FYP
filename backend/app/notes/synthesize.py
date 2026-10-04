@@ -167,9 +167,11 @@ def _unit_from_retrieval(
     votes: Counter[str] = Counter()
     for s in spans:
         if first <= s.index <= last:
-            for uid in s.retrieved_unit_ids or []:
-                if uid in valid_ids:
-                    votes[uid] += 1
+            # SGCD returns least -> most relevant. Counting all k equally made
+            # coverage pick the first (least relevant) unit whenever k tied.
+            ids = [uid for uid in (s.retrieved_unit_ids or []) if uid in valid_ids]
+            if ids:
+                votes[ids[-1]] += 1
     if not votes:
         return None
     return votes.most_common(1)[0][0]
@@ -199,6 +201,8 @@ def synthesize(
         last = int(raw.get("last_span", first))
         if last < first:
             first, last = last, first
+        first = max(spans[0].index, min(first, spans[-1].index))
+        last = max(first, min(last, spans[-1].index))
 
         unit_id = _unit_from_retrieval(spans, first, last, valid_ids)
         if unit_id is None:

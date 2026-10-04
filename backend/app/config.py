@@ -7,12 +7,16 @@ from __future__ import annotations
 
 import pathlib
 
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="CLASSSCRIBE_", env_file=".env", extra="ignore"
+        env_prefix="CLASSSCRIBE_",
+        env_file=".env",
+        extra="ignore",
+        populate_by_name=True,
     )
 
     # --- storage ---
@@ -20,9 +24,14 @@ class Settings(BaseSettings):
     db_url: str = "sqlite:///./data/classscribe.db"
 
     # --- ASR ---
-    asr_backend: str = "mlx"  # "mlx" | "faster-whisper"
-    asr_model: str = "mlx-community/whisper-large-v3-turbo"
+    asr_backend: str = "qwen"  # qwen | mlx | faster-whisper | parakeet
+    asr_model: str = "Qwen/Qwen3-ASR-0.6B-hf"
     asr_language: str | None = "hi"
+    asr_method: str = "s5"
+    asr_max_new_tokens: int = Field(default=512, ge=64, le=2048)
+    asr_repetition_penalty: float = Field(default=1.1, ge=1.0, le=2.0)
+    max_upload_mb: int = Field(default=1024, ge=1)
+    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # --- SGCD, frozen from the DEV sweep ---
     # Span duration is load-bearing: at ~5.7 s conditioning regresses (+5.11 WER),
@@ -43,12 +52,28 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 12
 
     # --- LLM ---
-    anthropic_api_key: str | None = None
-    llm_model: str = "claude-opus-5"
+    # Accepts GEMINI_API_KEY, GOOGLE_API_KEY, or CLASSSCRIBE_GEMINI_API_KEY.
+    gemini_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "GEMINI_API_KEY",
+            "GOOGLE_API_KEY",
+            "CLASSSCRIBE_GEMINI_API_KEY",
+        ),
+    )
+    llm_model: str = "gemini-3.1-flash-lite"
     llm_effort: str = "high"
 
     # --- jobs ---
-    worker_threads: int = 1
+    worker_threads: int = Field(default=1, ge=1, le=4)
+
+    @model_validator(mode="after")
+    def validate_spans(self):
+        if not 0 < self.span_min_s <= self.span_target_s <= self.span_max_s <= 30:
+            raise ValueError("span durations must satisfy 0 < min <= target <= max <= 30")
+        if not 1 <= self.retrieval_k <= 20 or not 1 <= self.prompt_max_tokens <= 200:
+            raise ValueError("retrieval_k must be 1–20 and prompt_max_tokens 1–200")
+        return self
 
     @property
     def uploads_dir(self) -> pathlib.Path:
@@ -62,8 +87,18 @@ class Settings(BaseSettings):
     def chroma_dir(self) -> pathlib.Path:
         return self.data_dir / "chroma"
 
+    @property
+    def materials_dir(self) -> pathlib.Path:
+        return self.data_dir / "materials"
+
     def ensure_dirs(self) -> None:
-        for p in (self.data_dir, self.uploads_dir, self.audio_dir, self.chroma_dir):
+        for p in (
+            self.data_dir,
+            self.uploads_dir,
+            self.audio_dir,
+            self.chroma_dir,
+            self.materials_dir,
+        ):
             p.mkdir(parents=True, exist_ok=True)
 
 

@@ -35,8 +35,8 @@ export function HealthBadge() {
   const { data, error, isLoading } = useHealth()
 
   const down = !!error
-  const spanLow = !!data && data.sgcd.span_target_s < SPAN_FLOOR_S
-  const warn = !!data && (!data.ffmpeg || spanLow)
+  const spanLow = !!data && data.asr_default.method === 'sgcd' && data.sgcd.span_target_s < SPAN_FLOOR_S
+  const warn = !!data && (!data.ffmpeg || spanLow || !data.llm_configured)
 
   const dot = down
     ? 'bg-destructive'
@@ -77,34 +77,31 @@ export function HealthBadge() {
           <p className="text-xs text-muted-foreground">Checking backend…</p>
         ) : (
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Cpu className="h-4 w-4 text-primary" /> Active configuration
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Cpu className="h-4 w-4 text-muted-foreground" /> Active configuration
             </div>
 
             <Separator className="my-2" />
 
-            <p className="pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              ASR
-            </p>
+            <p className="kicker pb-1">ASR</p>
             <Row label="backend" value={data.asr.backend} />
             <Row label="model" value={data.asr.model.split('/').pop()} />
             <Row label="language" value={data.asr.language ?? 'auto'} />
 
             <Separator className="my-2" />
 
-            <p className="pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              SGCD
-            </p>
+            <p className="kicker pb-1">SGCD</p>
             <Row label="span target" value={`${data.sgcd.span_target_s}s`} warn={spanLow} />
             <Row label="retrieval k" value={data.sgcd.retrieval_k} />
             <Row label="prompt budget" value={`${data.sgcd.prompt_max_tokens} tok`} />
             <Row
               label="safeguard"
-              value={data.sgcd.safeguard_enabled ? 'on' : 'off'}
+              value={data.asr_default.safeguard_enabled ? 'on' : 'off'}
             />
 
             <Separator className="my-2" />
             <Row label="llm" value={data.llm_model} />
+            <Row label="LLM credential" value={data.llm_configured ? 'configured' : 'not configured'} warn={!data.llm_configured} />
             <Row label="ffmpeg" value={data.ffmpeg ? 'found' : 'MISSING'} warn={!data.ffmpeg} />
 
             {spanLow && (
@@ -112,7 +109,7 @@ export function HealthBadge() {
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   Span target is below {SPAN_FLOOR_S}s. Conditioning regresses WER at short spans —
-                  transcripts will be worse than an unconditioned baseline.
+                  The project's Whisper experiments found worse results at short spans.
                 </span>
               </p>
             )}
@@ -124,6 +121,9 @@ export function HealthBadge() {
                 </span>
               </p>
             )}
+            {!data.llm_configured && <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              Transcription works locally. Configure Gemini for generated notes, syllabus parsing and image extraction. Chat can quote indexed sources without it.
+            </p>}
             {!warn && (
               <p className="mt-3 flex items-center gap-2 text-[11px] text-emerald-600 dark:text-emerald-400">
                 <CircleCheck className="h-3.5 w-3.5" /> Pipeline ready.

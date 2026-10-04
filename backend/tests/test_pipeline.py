@@ -41,15 +41,23 @@ class StubBackend:
         line = FAKE_SPEECH[(len(self.calls) - 1) % len(FAKE_SPEECH)]
         return DecodeResult(text=line, avg_logprob=-0.25, compression_ratio=1.3)
 
+    def transcribe_rescored(self, audio, config):
+        result = self.transcribe(audio, None)
+        result.baseline_text = 'Unrescored top beam'
+        return result
+
 
 @pytest.fixture
 def stubbed(monkeypatch):
     backend = StubBackend()
-    monkeypatch.setattr("app.asr.sgcd.get_backend", lambda: backend)
+    monkeypatch.setattr("app.asr.sgcd.get_backend", lambda *args, **kw: backend)
 
     # Keep the vector store out of it — indexing would pull a 120 MB encoder.
     monkeypatch.setattr("app.rag.store.upsert", lambda *a, **k: None)
     monkeypatch.setattr("app.rag.store.delete_lecture", lambda *a, **k: None)
+    monkeypatch.setattr("app.rag.store.delete_subject", lambda *a, **k: None)
+    monkeypatch.setattr("app.rag.store.delete_subject_units", lambda *a, **k: None)
+    monkeypatch.setattr("app.rag.store.delete_material", lambda *a, **k: None)
 
     def fake_notes(system, user, schema, **kw):
         return {
@@ -128,7 +136,7 @@ def test_lecture_pipeline_end_to_end(client, stubbed, tmp_path):
         r = client.post(
             f"/subjects/{sid}/lectures",
             files={"file": ("lecture.wav", fh, "audio/wav")},
-            data={"title": "Week 1 — scheduling"},
+            data={"title": "Week 1 — scheduling", "model_id": "whisper-turbo", "method": "sgcd"},
         )
     assert r.status_code == 202
     job = _await_job(client, r.json()["id"])

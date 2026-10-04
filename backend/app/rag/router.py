@@ -1,76 +1,24 @@
 """Classify an incoming query so the right context and output shape are used.
 
-"Based on the queries and the type of the queries, we generate relevant output" —
-a definition lookup wants two sentences from one span; a revision request wants the
-notes for a whole unit; a coverage question wants a database group-by and no
-retrieval at all. Routing first keeps each of those from being answered as if it
-were the others.
+Routing is heuristic: an LLM classifier doubled every chat into two Gemini
+calls and burned the free-tier quota before the answer ran. Keyword routing is
+good enough, and coverage/smalltalk never need a model at all.
 """
 from __future__ import annotations
 
-import logging
+import re
 from dataclasses import dataclass
 
-from app.llm.client import complete_json
-
-log = logging.getLogger(__name__)
-
 QUERY_TYPES = (
-    "lookup",     # a fact, definition, or "what did she say about X"
-    "explain",    # conceptual explanation, worked through
-    "summary",    # summarise a lecture / topic / the subject so far
-    "compare",    # contrast two things taught
-    "quiz",       # generate practice questions or flashcards
-    "outline",    # structure: what topics exist, in what order
-    "coverage",   # syllabus progress — answered from the database, not retrieval
-    "smalltalk",  # greetings, meta questions about the assistant
+    "lookup",
+    "explain",
+    "summary",
+    "compare",
+    "quiz",
+    "outline",
+    "coverage",
+    "smalltalk",
 )
-
-_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "query_type": {"type": "string", "enum": list(QUERY_TYPES)},
-        "search_query": {
-            "type": "string",
-            "description": "The query rewritten for semantic retrieval: self-contained, "
-                           "pronouns resolved from the conversation, technical terms in English.",
-        },
-        "lecture_hint": {
-            "type": "string",
-            "description": "Lecture title or number the user referred to, or empty string.",
-        },
-        "wants_notes": {
-            "type": "boolean",
-            "description": "True when curated notes serve better than raw transcript.",
-        },
-    },
-    "required": ["query_type", "search_query", "lecture_hint", "wants_notes"],
-    "additionalProperties": False,
-}
-
-_SYSTEM = """\
-You route questions in a study assistant built over a student's own lecture \
-recordings. Classify the latest question and rewrite it for retrieval.
-
-Types:
-- lookup: a specific fact, definition, or "what did the lecturer say about X"
-- explain: asks for a concept to be explained or worked through
-- summary: summarise a lecture, a topic, or the course so far
-- compare: contrast two or more things that were taught
-- quiz: asks for practice questions, flashcards, or self-testing material
-- outline: asks what topics exist and in what order
-- coverage: asks about syllabus progress — what has been covered, what is left
-- smalltalk: greetings or questions about the assistant itself
-
-`search_query` must stand alone without the conversation: resolve "it", "that \
-topic", "the last one" against the history, and put technical terms in English \
-even when the question is asked in Hindi or transliterated Hindi, because the \
-notes are written in English.
-
-Set `wants_notes` true for summary, outline, quiz, and broad explain questions — \
-curated notes serve those better. Set it false for lookup and for anything asking \
-what was actually said, where raw transcript is the ground truth.\
-"""
 
 
 @dataclass
@@ -81,26 +29,49 @@ class Route:
     wants_notes: bool
 
 
-def _fallback(question: str) -> Route:
-    return Route(query_type="lookup", search_query=question, lecture_hint="", wants_notes=False)
+_SMALLTALK = re.compile(
+    r"^\s*(hi|hello|hey|thanks|thank you|who are you|what can you do|help)\b",
+    re.I,
+)
+_COVERAGE = re.compile(
+    r"\b(coverage|been covered|what(?:'s| is) left|outstanding units|"
+    r"syllabus progress|how much have we)\b",
+    re.I,
+)
+_QUIZ = re.compile(r"\b(quiz|practice questions?|flashcards?|test me|mcqs?)\b", re.I)
+_OUTLINE = re.compile(
+    r"\b(outline|list the topics|what topics|what does the syllabus cover|"
+    r"what is on the syllabus)\b",
+    re.I,
+)
+_SUMMARY = re.compile(r"\b(summar(?:y|ise|ize)|recap|overview)\b", re.I)
+_COMPARE = re.compile(r"\b(compare|contrast|difference|versus|\bvs\.?\b)\b", re.I)
+_EXPLAIN = re.compile(r"\b(explain|how does|why does|walk me through|teach me)\b", re.I)
+_LECTURE = re.compile(r"(?:lecture|recording)\s+#?(\d+)|last (?:lecture|recording)", re.I)
+
+
+def _lecture_hint(question: str) -> str:
+    match = _LECTURE.search(question)
+    return match.group(0).strip() if match else ""
 
 
 def route(question: str, history: list[dict] | None = None) -> Route:
-    convo = ""
-    for msg in (history or [])[-6:]:
-        convo += f"{msg['role']}: {msg['content']}\n"
-    payload = f"Conversation so far:\n{convo or '(none)'}\n\nLatest question: {question}"
+    del history
+    hint = _lecture_hint(question)
+    q = question.strip()
 
-    try:
-        raw = complete_json(_SYSTEM, payload, _SCHEMA, max_tokens=2_000, effort="low")
-    except Exception as exc:
-        # A routing failure should degrade to plain retrieval, not break the chat.
-        log.warning("router failed, falling back to lookup: %s", exc)
-        return _fallback(question)
-
-    return Route(
-        query_type=raw.get("query_type", "lookup"),
-        search_query=raw.get("search_query") or question,
-        lecture_hint=(raw.get("lecture_hint") or "").strip(),
-        wants_notes=bool(raw.get("wants_notes")),
-    )
+    if _SMALLTALK.match(q) and len(q) < 60:
+        return Route("smalltalk", q, "", False)
+    if _COVERAGE.search(q):
+        return Route("coverage", q, hint, False)
+    if _QUIZ.search(q):
+        return Route("quiz", q, hint, True)
+    if _OUTLINE.search(q):
+        return Route("outline", q, hint, True)
+    if _SUMMARY.search(q):
+        return Route("summary", q, hint, True)
+    if _COMPARE.search(q):
+        return Route("compare", q, hint, True)
+    if _EXPLAIN.search(q):
+        return Route("explain", q, hint, True)
+    return Route("lookup", q, hint, False)

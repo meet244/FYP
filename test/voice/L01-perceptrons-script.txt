@@ -1,0 +1,13 @@
+Aaj ke lecture mein hum perceptron padhenge.
+
+The perceptron is a linear binary classifier. Each input x i is multiplied by a weight w i. We add a bias b. If the weighted sum is at least zero, the output is one, otherwise zero. The set of points where the sum is zero is a hyperplane.
+
+A single perceptron can realise AND, OR, and NOT. For two inputs, AND uses weights one and one with bias minus one point five. OR uses the same weights with bias minus zero point five.
+
+XOR cannot be done with one layer. The points (0,0) and (1,1) are class zero. The points (0,1) and (1,0) are class one. Koi bhi straight line in char points ko alag nahi kar sakti. This is called not linearly separable.
+
+The fix is a hidden layer. Hidden unit one computes x1 and not x2. Hidden unit two computes not x1 and x2. The output unit takes the OR of those two features. That two-layer network is XOR.
+
+Training uses the perceptron criterion. If the prediction is already correct, we do nothing. If we predicted zero but the label is one, we add eta times x to the weights. If we predicted one but the label is zero, we subtract. If the data is linearly separable, this stops after a finite number of mistakes. That is the perceptron convergence theorem.
+
+Agla lecture backpropagation aur gradient descent par hoga. We will replace the step function with a sigmoid or ReLU so that a loss can be differentiated. Thank you.

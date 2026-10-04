@@ -1,9 +1,9 @@
-"""Chroma-backed vector index over transcript spans and generated notes.
+"""Chroma-backed vector index over syllabus units, transcript spans, and notes.
 
-Multilingual embeddings, not English ones: the corpus is Devanagari matrix with
-Latin technical terms in the same sentence, and a monolingual encoder collapses
-the Hindi half. Everything is keyed by subject so the chat interface can scope a
-query to one course.
+Local PersistentClient on disk — no remote vector DB. Multilingual embeddings, not
+English ones: the corpus is Devanagari matrix with Latin technical terms in the
+same sentence, and a monolingual encoder collapses the Hindi half. Everything is
+keyed by subject so the chat interface can scope a query to one course.
 """
 from __future__ import annotations
 
@@ -20,11 +20,14 @@ log = logging.getLogger(__name__)
 
 SPANS = "spans"
 NOTES = "notes"
+UNITS = "units"
+MATERIALS = "materials"
 
 
 @functools.lru_cache(maxsize=1)
 def _client() -> chromadb.ClientAPI:
-    return chromadb.PersistentClient(path=str(settings.chroma_dir))
+    return chromadb.PersistentClient(path=str(settings.chroma_dir),
+                                    settings=chromadb.Settings(anonymized_telemetry=False))
 
 
 @functools.lru_cache(maxsize=1)
@@ -49,12 +52,30 @@ def upsert(name: str, ids: list[str], documents: list[str], metadatas: list[dict
     collection(name).upsert(ids=ids, documents=documents, metadatas=metadatas)
 
 
+def _delete_where(name: str, where: dict) -> None:
+    """Delete without loading the embedding model — subject teardown must stay cheap."""
+    try:
+        _client().get_collection(name=name).delete(where=where)
+    except chromadb.errors.NotFoundError:
+        log.debug("delete on absent collection %s skipped", name)
+
+
 def delete_lecture(lecture_id: str) -> None:
     for name in (SPANS, NOTES):
-        try:
-            collection(name).delete(where={"lecture_id": lecture_id})
-        except Exception as exc:  # collection may not exist yet
-            log.debug("delete on %s skipped: %s", name, exc)
+        _delete_where(name, {"lecture_id": lecture_id})
+
+
+def delete_subject_units(subject_id: str) -> None:
+    _delete_where(UNITS, {"subject_id": subject_id})
+
+
+def delete_material(material_id: str) -> None:
+    _delete_where(MATERIALS, {"material_id": material_id})
+
+
+def delete_subject(subject_id: str) -> None:
+    for name in (SPANS, NOTES, UNITS, MATERIALS):
+        _delete_where(name, {"subject_id": subject_id})
 
 
 def search(

@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils'
 import type { Job, Lecture, LectureStatus } from '@/lib/api/types'
 
 const STATUS: Record<LectureStatus, { label: string; className: string; pulse?: boolean }> = {
+  failed: { label: 'Failed', className: 'border-destructive/30 text-destructive' },
   uploaded: { label: 'Queued', className: 'border-border text-muted-foreground', pulse: true },
   transcribing: {
     label: 'Transcribing',

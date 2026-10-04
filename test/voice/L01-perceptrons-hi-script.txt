@@ -1,0 +1,3 @@
+आज के लेक्चर में हम perceptron देखेंगे। Perceptron एक linear binary classifier है। हर input को weight से गुणा करते हैं, bias जोड़ते हैं। अगर weighted sum शून्य से बड़ा या बराबर है तो output एक है, वरना शून्य।
+
+AND, OR और NOT एक perceptron से बन जाते हैं। XOR नहीं बनता क्योंकि वह linearly separable नहीं है। Hidden layer से XOR बनता है। अगले लेक्चर में backpropagation आएगी।

@@ -7,7 +7,7 @@ pydantic-settings==2.7.0
 
 # --- persistence ---
 SQLAlchemy==2.0.36
-chromadb==0.5.23
+chromadb==1.5.9
 
 # --- ASR (SGCD) ---
 mlx-whisper==0.4.2 ; sys_platform == "darwin" and platform_machine == "arm64"
@@ -17,13 +17,18 @@ numpy==1.26.4
 
 # --- retrieval ---
 scikit-learn==1.6.0
-sentence-transformers==3.3.1
+sentence-transformers==6.1.0
+# Native Qwen3-ASR support; older Transformers releases do not have its processor.
+transformers==5.18.0
+torch==2.14.1
+librosa==0.11.0
+tiktoken==0.14.0
 
 # --- ingestion ---
 pypdf==5.1.0
 
 # --- LLM ---
-anthropic==0.42.0
+google-genai==1.52.0
 
 # --- misc ---
-regex==2024.11.6
+regex==2026.9.29

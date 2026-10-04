@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import pathlib
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
 from app.jobs import queue
+from app.ingest.uploads import save_upload
 from app.models import Subject, SyllabusUnit
 from app.notes.coverage import subject_coverage
 from app.schemas import (
@@ -32,6 +35,7 @@ def _out(subject: Subject) -> SubjectOut:
         created_at=subject.created_at,
         has_syllabus=subject.syllabus is not None,
         lecture_count=len(subject.lectures),
+        material_count=len(subject.materials),
     )
 
 
@@ -66,8 +70,17 @@ def delete_subject(subject_id: str, db: Session = Depends(get_db)) -> None:
     from app.rag import store
 
     subject = _get(db, subject_id)
+    if queue.active_for(db, subject_id=subject.id):
+        raise HTTPException(409, "cancel or finish active jobs before deleting this subject")
+    store.delete_subject(subject.id)
+    for mat in subject.materials:
+        pathlib.Path(mat.path).unlink(missing_ok=True)
     for lec in subject.lectures:
-        store.delete_lecture(lec.id)
+        for path in (lec.source_path, lec.audio_path):
+            if path:
+                pathlib.Path(path).unlink(missing_ok=True)
+    if subject.syllabus and subject.syllabus.source_path:
+        pathlib.Path(subject.syllabus.source_path).unlink(missing_ok=True)
     db.delete(subject)
     db.commit()
 
@@ -86,15 +99,16 @@ def upload_syllabus(
     if not (file.filename or "").lower().endswith(".pdf"):
         raise HTTPException(400, "syllabus must be a PDF")
 
-    dest = settings.uploads_dir / f"syllabus-{uuid.uuid4().hex}.pdf"
-    dest.write_bytes(file.file.read())
-
-    job = queue.enqueue(
-        "ingest_syllabus",
-        subject_id=subject.id,
-        payload={"source_path": str(dest), "filename": file.filename},
-    )
-    return JobOut.model_validate(job)
+    with queue.operation_lock:
+        if queue.active_for(db, subject_id=subject_id):
+            raise HTTPException(409, "finish active subject jobs before replacing its syllabus")
+        dest = settings.uploads_dir / f"syllabus-{uuid.uuid4().hex}.pdf"
+        save_upload(file, dest)
+        job = queue.enqueue(
+            "ingest_syllabus", subject_id=subject.id,
+            payload={"source_path": str(dest), "filename": file.filename},
+        )
+    return JobOut.of(job)
 
 
 @router.get("/{subject_id}/syllabus", response_model=SyllabusOut)
@@ -103,6 +117,19 @@ def get_syllabus(subject_id: str, db: Session = Depends(get_db)) -> SyllabusOut:
     if subject.syllabus is None:
         raise HTTPException(404, "no syllabus uploaded for this subject")
     return SyllabusOut.model_validate(subject.syllabus)
+
+
+@router.get("/{subject_id}/syllabus/file")
+def get_syllabus_file(subject_id: str, db: Session = Depends(get_db)) -> FileResponse:
+    subject = _get(db, subject_id)
+    if not subject.syllabus or not subject.syllabus.source_path:
+        raise HTTPException(404, "no syllabus file available")
+    path = pathlib.Path(subject.syllabus.source_path)
+    if not path.exists():
+        raise HTTPException(404, "syllabus file missing on disk")
+    return FileResponse(path, media_type="application/pdf",
+                        filename=subject.syllabus.source_filename or "syllabus.pdf",
+                        content_disposition_type="inline")
 
 
 @router.patch("/{subject_id}/syllabus/units/{unit_id}", response_model=UnitOut)
@@ -117,8 +144,11 @@ def update_unit(
     the system.
     """
     from app.asr import retrieve
+    from app.rag import indexer
 
     subject = _get(db, subject_id)
+    if queue.active_for(db, subject_id=subject_id):
+        raise HTTPException(409, "finish active subject jobs before editing its syllabus")
     unit = db.get(SyllabusUnit, unit_id)
     if unit is None or subject.syllabus is None or unit.syllabus_id != subject.syllabus.id:
         raise HTTPException(404, "unit not found on this subject")
@@ -131,6 +161,7 @@ def update_unit(
         unit.keywords = body.keywords
     db.commit()
     retrieve.invalidate(subject.syllabus.id)
+    indexer.index_syllabus_units(db, subject)
     return UnitOut.model_validate(unit)
 
 

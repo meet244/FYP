@@ -15,6 +15,7 @@ export interface Subject {
   created_at: string
   has_syllabus: boolean
   lecture_count: number
+  material_count: number
 }
 
 export interface SubjectCreate {
@@ -56,8 +57,61 @@ export type LectureStatus =
   | 'transcribed'
   | 'summarising'
   | 'ready'
+  | 'failed'
+
+export interface ASROptions {
+  model_id?: string
+  method?: 'baseline' | 'sgcd' | 's5'
+  language?: 'hi' | 'en' | 'auto'
+}
+
+export interface ASRConfig extends ASROptions {
+  model_id: string
+  method: 'baseline' | 'sgcd' | 's5'
+  language: 'hi' | 'en' | 'auto'
+  backend: string
+  model: string
+  safeguard_enabled: boolean
+}
+
+export interface ASRModel {
+  id: string
+  name: string
+  family: string
+  supports_context: boolean
+  languages: string[]
+  default_language: string | null
+  warning: string | null
+  available: boolean
+  unavailable_reason: string | null
+}
+
+export interface ASRCatalog {
+  default: ASRConfig
+  models: ASRModel[]
+  methods: { id: string; name: string; families: string[]; model_ids?: string[]; experimental: boolean; warning?: string }[]
+}
+
+export interface TranscriptionRun {
+  id: string
+  lecture_id: string
+  job_id: string
+  config: ASRConfig
+  stats: AsrStats
+  created_at: string
+}
 
 export interface AsrStats {
+  rescored?: boolean
+  lm_sha256?: string | null
+  model_id?: string
+  model?: string
+  backend?: string
+  method?: string
+  language?: string
+  calibrated_safeguard?: boolean
+  rtf?: number
+  resumed_spans?: number
   n_spans: number
   mean_span_s: number
   /** False when the lecture was decoded without a syllabus — one pass, no SGCD. */
@@ -80,9 +134,15 @@ export interface Lecture {
   created_at: string
   error: string | null
   asr_stats: AsrStats | null
+  asr_config?: ASRConfig | null
+  summary?: string | null
 }
 
 export interface Span {
+  baseline_text?: string | null
+  prompt_tokens?: number
+  avg_logprob?: number | null
+  compression_ratio?: number | null
   index: number
   start_s: number
   end_s: number
@@ -123,6 +183,23 @@ export interface Note {
   unit_id: string | null
   terms: Term[]
   outcomes: Outcome[]
+}
+
+// --- materials ---
+export type MaterialKind = 'pdf' | 'image' | 'doc'
+export type MaterialStatus = 'uploaded' | 'processing' | 'ready' | 'failed'
+
+export interface Material {
+  id: string
+  subject_id: string
+  kind: MaterialKind
+  title: string
+  original_filename: string | null
+  mime: string | null
+  status: MaterialStatus
+  n_chunks: number
+  error: string | null
+  created_at: string
 }
 
 // --- coverage ---
@@ -180,6 +257,12 @@ export interface Citation {
   end_s: number | null
   timestamp: string | null
   note_id: string | null
+  unit_id: string | null
+  unit_title: string | null
+  material_id: string | null
+  material_title: string | null
+  excerpt?: string | null
+  page?: number | null
 }
 
 export interface ChatRequest {
@@ -211,8 +294,8 @@ export interface ChatSessionSummary {
 }
 
 // --- jobs ---
-export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
-export type JobKind = 'process_lecture' | 'ingest_syllabus'
+export type JobStatus = 'queued' | 'running' | 'cancelling' | 'cancelled' | 'succeeded' | 'failed'
+export type JobKind = 'process_lecture' | 'generate_notes' | 'ingest_syllabus' | 'ingest_material'
 
 export interface Job {
   id: string
@@ -225,6 +308,8 @@ export interface Job {
   error: string | null
   lecture_id: string | null
   subject_id: string | null
+  material_id: string | null
+  asr_config?: ASRConfig | null
   created_at: string
   updated_at: string
 }
@@ -241,4 +326,6 @@ export interface Health {
     safeguard_enabled: boolean
   }
   llm_model: string
+  llm_configured: boolean
+  asr_default: ASRConfig
 }

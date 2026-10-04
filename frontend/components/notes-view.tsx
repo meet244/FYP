@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { GraduationCap, Play, Sparkles } from 'lucide-react'
+import { GraduationCap, Play } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Markdown } from '@/components/markdown'
@@ -28,14 +28,14 @@ export function NotesView({
 
   if (notes.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border/60 p-12 text-center">
-        <Sparkles className="mx-auto mb-3 h-7 w-7 text-muted-foreground" />
-        <h4 className="mb-1.5 font-semibold text-foreground">No notes for this lecture</h4>
+      <div className="border border-dashed border-border p-12 text-center">
+        <p className="kicker mb-3">Notes</p>
+        <h4 className="mb-1.5 font-display text-2xl text-foreground">None for this lecture</h4>
         <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
           Note synthesis needs an LLM key. Transcription does not — the transcript above is the
           expensive artefact and it is already safe on disk. Set{' '}
-          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ANTHROPIC_API_KEY</code>{' '}
-          and reprocess.
+          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">GEMINI_API_KEY</code>{' '}
+          and use “Regenerate notes” to retry without transcribing again.
         </p>
       </div>
     )
@@ -52,8 +52,8 @@ export function NotesView({
             key={note.id}
             ref={focused ? focusRef : undefined}
             className={cn(
-              'scroll-mt-4 rounded-xl border bg-card p-4 transition-colors',
-              focused ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border/60'
+              'scroll-mt-4 border bg-card p-5 transition-colors',
+              focused ? 'border-foreground/30' : 'border-border'
             )}
           >
             <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -61,7 +61,7 @@ export function NotesView({
                 <button
                   type="button"
                   onClick={() => onSeek(note.start_s!)}
-                  className="flex shrink-0 items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] text-primary transition-colors hover:bg-primary/20"
+                  className="flex shrink-0 items-center gap-1 border border-border px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
                   title="Play from here"
                 >
                   <Play className="h-2.5 w-2.5" />
@@ -69,7 +69,7 @@ export function NotesView({
                 </button>
               )}
 
-              <h3 className="min-w-0 flex-1 text-sm font-bold text-foreground">{note.topic}</h3>
+              <h3 className="min-w-0 flex-1 font-display text-lg leading-snug text-foreground">{note.topic}</h3>
 
               {note.unit_id && unitKey.has(note.unit_id) && (
                 <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">
@@ -82,9 +82,7 @@ export function NotesView({
 
             {note.terms.length > 0 && (
               <div className="mt-4 border-t border-border/50 pt-3">
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Key terms
-                </p>
+                <p className="kicker mb-2">Key terms</p>
                 <dl className="space-y-1.5">
                   {note.terms.map((t) => (
                     <div key={t.term} className="text-xs leading-relaxed">
@@ -98,13 +96,13 @@ export function NotesView({
 
             {note.outcomes.length > 0 && (
               <div className="mt-4 border-t border-border/50 pt-3">
-                <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <p className="kicker mb-2 flex items-center gap-1.5">
                   <GraduationCap className="h-3 w-3" /> Learning outcomes
                 </p>
                 <ul className="space-y-1.5">
                   {note.outcomes.map((o, i) => (
                     <li key={i} className="flex items-start gap-2 text-xs leading-relaxed">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                      <span className="mt-1.5 h-px w-2 shrink-0 bg-foreground/40" />
                       <span className="text-muted-foreground">{o.text}</span>
                       {o.bloom_level && (
                         <Badge

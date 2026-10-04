@@ -150,6 +150,14 @@ def test_safeguard_tolerates_missing_metrics():
     assert not _should_revert(_dr("ok", lp=None, cr=None), _dr("base", lp=None, cr=None))
 
 
+def test_repetition_loop_detects_the_wilt_collapse():
+    from app.asr.sgcd import _is_repetition_loop
+
+    loop = " ".join(["विल्ट"] * 32)
+    assert _is_repetition_loop(loop)
+    assert not _is_repetition_loop("हम process scheduling और paging समझेंगे")
+
+
 # --- normalisation -----------------------------------------------------------
 def test_normalisation_matches_the_research_implementation():
     assert normalize("File Permissions समझें।") == "file permissions समझें"
@@ -188,6 +196,7 @@ def test_subject_lifecycle(client):
     # No syllabus and no lectures yet.
     assert client.get(f"/subjects/{sid}/syllabus").status_code == 404
     assert client.get(f"/subjects/{sid}/lectures").json() == []
+    assert client.get(f"/subjects/{sid}").json()["material_count"] == 0
 
     cov = client.get(f"/subjects/{sid}/coverage").json()
     assert cov["total_units"] == 0 and cov["covered_units"] == 0
@@ -217,6 +226,16 @@ def test_rejects_non_pdf_syllabus(client):
     r = client.post(
         f"/subjects/{sid}/syllabus",
         files={"file": ("syllabus.docx", b"x", "application/msword")},
+    )
+    assert r.status_code == 400
+    client.delete(f"/subjects/{sid}")
+
+
+def test_rejects_unsupported_material(client):
+    sid = client.post("/subjects", json={"name": "ML"}).json()["id"]
+    r = client.post(
+        f"/subjects/{sid}/materials",
+        files=[("files", ("notes.exe", b"x", "application/octet-stream"))],
     )
     assert r.status_code == 400
     client.delete(f"/subjects/{sid}")

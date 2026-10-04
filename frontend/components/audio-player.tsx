@@ -21,6 +21,7 @@ export const AudioPlayer = forwardRef<
   { lectureId: string; title: string; onTime?: (t: number) => void; className?: string }
 >(function AudioPlayer({ lectureId, title, onTime, className }, ref) {
   const audioRef = useRef<HTMLAudioElement>(null)
+  const pendingSeek = useRef<number | null>(null)
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
   const [total, setTotal] = useState(0)
@@ -31,6 +32,10 @@ export const AudioPlayer = forwardRef<
     seek(seconds: number) {
       const el = audioRef.current
       if (!el) return
+      if (el.readyState === 0) {
+        pendingSeek.current = seconds
+        return
+      }
       el.currentTime = seconds
       void el.play().catch(() => {
         /* autoplay blocked before any user gesture — the seek still lands */
@@ -54,7 +59,7 @@ export const AudioPlayer = forwardRef<
     return (
       <div
         className={cn(
-          'rounded-xl border border-dashed border-border/60 px-4 py-3 text-xs text-muted-foreground',
+          'border border-dashed border-border px-4 py-3 text-xs text-muted-foreground',
           className
         )}
       >
@@ -64,12 +69,20 @@ export const AudioPlayer = forwardRef<
   }
 
   return (
-    <div className={cn('rounded-xl border border-border/60 bg-card p-3', className)}>
+    <div className={cn('border border-border bg-card p-3', className)}>
       <audio
         ref={audioRef}
         src={audioUrl(lectureId)}
         preload="metadata"
-        onLoadedMetadata={(e) => setTotal(e.currentTarget.duration)}
+        onLoadedMetadata={(e) => {
+          const el = e.currentTarget
+          setTotal(el.duration)
+          if (pendingSeek.current !== null) {
+            el.currentTime = Math.max(0, Math.min(el.duration, pendingSeek.current))
+            pendingSeek.current = null
+            void el.play().catch(() => {})
+          }
+        }}
         onTimeUpdate={(e) => {
           setCurrent(e.currentTarget.currentTime)
           onTime?.(e.currentTarget.currentTime)
@@ -82,7 +95,7 @@ export const AudioPlayer = forwardRef<
       <div className="flex items-center gap-2">
         <Button
           size="icon"
-          className="h-9 w-9 shrink-0 rounded-full"
+          className="h-9 w-9 shrink-0 rounded-none"
           onClick={() => {
             const el = audioRef.current
             if (!el) return

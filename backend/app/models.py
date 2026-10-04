@@ -54,6 +54,9 @@ class Subject(Base, TimestampMixin):
     lectures: Mapped[list["Lecture"]] = relationship(
         back_populates="subject", cascade="all, delete-orphan"
     )
+    materials: Mapped[list["Material"]] = relationship(
+        back_populates="subject", cascade="all, delete-orphan"
+    )
 
 
 class Syllabus(Base, TimestampMixin):
@@ -92,6 +95,28 @@ class SyllabusUnit(Base, TimestampMixin):
     syllabus: Mapped[Syllabus] = relationship(back_populates="units")
 
 
+class Material(Base, TimestampMixin):
+    """A non-audio source in the local multimodal index: PDF, image, or text doc."""
+
+    __tablename__ = "materials"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    subject_id: Mapped[str] = mapped_column(ForeignKey("subjects.id", ondelete="CASCADE"))
+    # pdf | image | doc
+    kind: Mapped[str] = mapped_column(String(16))
+    title: Mapped[str] = mapped_column(String(512))
+    original_filename: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    path: Mapped[str] = mapped_column(String(1024))
+    mime: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    n_chunks: Mapped[int] = mapped_column(Integer, default=0)
+    # uploaded -> processing -> ready | failed
+    status: Mapped[str] = mapped_column(String(32), default="uploaded")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    subject: Mapped[Subject] = relationship(back_populates="materials")
+
+
 class Lecture(Base, TimestampMixin):
     __tablename__ = "lectures"
 
@@ -101,11 +126,14 @@ class Lecture(Base, TimestampMixin):
     recorded_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     original_filename: Mapped[str | None] = mapped_column(String(512), nullable=True)
     audio_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    source_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     duration_s: Mapped[float | None] = mapped_column(Float, nullable=True)
     # uploaded -> transcribing -> transcribed -> summarising -> ready | failed
     status: Mapped[str] = mapped_column(String(32), default="uploaded")
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     asr_stats: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    asr_config: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     subject: Mapped[Subject] = relationship(back_populates="lectures")
     spans: Mapped[list["TranscriptSpan"]] = relationship(
@@ -116,6 +144,22 @@ class Lecture(Base, TimestampMixin):
     notes: Mapped[list["Note"]] = relationship(
         back_populates="lecture", cascade="all, delete-orphan"
     )
+    runs: Mapped[list["TranscriptionRun"]] = relationship(
+        back_populates="lecture", cascade="all, delete-orphan"
+    )
+
+
+class TranscriptionRun(Base, TimestampMixin):
+    """Immutable snapshots keep previous model output reviewable after reprocess."""
+
+    __tablename__ = "transcription_runs"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    lecture_id: Mapped[str] = mapped_column(ForeignKey("lectures.id", ondelete="CASCADE"), index=True)
+    job_id: Mapped[str] = mapped_column(String(32), unique=True)
+    config: Mapped[dict[str, Any]] = mapped_column(JSON)
+    stats: Mapped[dict[str, Any]] = mapped_column(JSON)
+    spans: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    lecture: Mapped[Lecture] = relationship(back_populates="runs")
 
 
 class TranscriptSpan(Base, TimestampMixin):

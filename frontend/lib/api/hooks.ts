@@ -20,7 +20,13 @@ export const keys = {
   notes: (id: string) => `/lectures/${id}/notes`,
   sessions: (id: string) => `/subjects/${id}/chat/sessions`,
   session: (id: string) => `/chat/sessions/${id}`,
+  materials: (id: string) => `/subjects/${id}/materials`,
+  material: (id: string) => `/materials/${id}`,
+  runs: (id: string) => `/lectures/${id}/runs`,
 }
+
+export const useASRModels = () => useSWR('/asr/models', api.getASRModels)
+export const useRuns = (id: string | null) => useSWR(id ? keys.runs(id) : null, () => api.listRuns(id!))
 
 export const useHealth = () =>
   useSWR(keys.health, api.getHealth, { refreshInterval: 30_000, shouldRetryOnError: false })
@@ -55,6 +61,9 @@ export const useNotes = (id: string | null) =>
 export const useSessions = (id: string | null) =>
   useSWR(id ? keys.sessions(id) : null, () => api.listSessions(id!))
 
+export const useMaterials = (id: string | null) =>
+  useSWR(id ? keys.materials(id) : null, () => api.listMaterials(id!))
+
 export const useSessionMessages = (id: string | null) =>
   useSWR(id ? keys.session(id) : null, () => api.getSession(id!))
 
@@ -65,22 +74,47 @@ export const useSessionMessages = (id: string | null) =>
  * `jobs` table and no push channel, and a transcription run is minutes long, so
  * a 1.5 s poll is both sufficient and cheap.
  */
-export function useJobTracker(onSettled?: (job: Job) => void) {
+export function useJobTracker(onSettled?: (job: Job) => void, scope?: { subject_id?: string; lecture_id?: string }) {
   const [jobs, setJobs] = useState<Job[]>([])
   const settled = useRef(onSettled)
   settled.current = onSettled
+  const { data: recovered } = useSWR(
+    scope ? ['/jobs', scope.subject_id, scope.lecture_id] : null,
+    () => api.listJobs(scope),
+    { refreshInterval: 1500 }
+  )
+  const completed = useRef(new Set<string>())
+  const dismissed = useRef(new Set<string>())
+
+  useEffect(() => {
+    if (!recovered) return
+    for (const job of recovered) {
+      if (['succeeded', 'failed', 'cancelled'].includes(job.status) && !completed.current.has(job.id)) {
+        completed.current.add(job.id)
+        settled.current?.(job)
+      }
+    }
+    setJobs((previous) => {
+      const updated = previous.map(j => recovered.find(r => r.id === j.id) ?? j)
+      const missing = recovered.filter(r => !dismissed.current.has(r.id) && !updated.some(j => j.id === r.id) &&
+        ['queued', 'running', 'cancelling', 'failed'].includes(r.status))
+      return [...updated, ...missing]
+    })
+  }, [recovered])
 
   const track = useCallback((job: Job) => {
     setJobs((prev) => (prev.some((j) => j.id === job.id) ? prev : [...prev, job]))
   }, [])
 
   const dismiss = useCallback((jobId: string) => {
+    dismissed.current.add(jobId)
     setJobs((prev) => prev.filter((j) => j.id !== jobId))
   }, [])
 
-  const active = jobs.filter((j) => j.status === 'queued' || j.status === 'running')
+  const active = jobs.filter((j) => ['queued', 'running', 'cancelling'].includes(j.status))
 
   useEffect(() => {
+    if (scope) return // Scoped trackers recover and poll through SWR above.
     if (active.length === 0) return
     const ids = active.map((j) => j.id)
 
@@ -88,16 +122,16 @@ export function useJobTracker(onSettled?: (job: Job) => void) {
       const fresh = await Promise.all(
         ids.map((id) => api.getJob(id).catch(() => null))
       )
+      for (const next of fresh) {
+        if (next && ['succeeded', 'failed', 'cancelled'].includes(next.status) && !completed.current.has(next.id)) {
+          completed.current.add(next.id)
+          settled.current?.(next)
+        }
+      }
       setJobs((prev) =>
         prev.map((j) => {
           const next = fresh.find((f) => f?.id === j.id)
           if (!next) return j
-          if (
-            (j.status === 'queued' || j.status === 'running') &&
-            (next.status === 'succeeded' || next.status === 'failed')
-          ) {
-            settled.current?.(next)
-          }
           return next
         })
       )
@@ -106,7 +140,7 @@ export function useJobTracker(onSettled?: (job: Job) => void) {
     const timer = setInterval(tick, 1_500)
     return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active.map((j) => j.id).join(',')])
+  }, [active.map((j) => j.id).join(','), !!scope])
 
   return { jobs, active, track, dismiss }
 }
@@ -120,10 +154,15 @@ export function revalidateAfterJob(job: Job) {
     globalMutate(keys.coverage(job.subject_id))
     globalMutate(keys.lectures(job.subject_id))
     if (kind === 'ingest_syllabus') globalMutate(keys.syllabus(job.subject_id))
+    if (kind === 'ingest_material') {
+      globalMutate(keys.materials(job.subject_id))
+      if (job.material_id) globalMutate(keys.material(job.material_id))
+    }
   }
   if (job.lecture_id) {
     globalMutate(keys.lecture(job.lecture_id))
     globalMutate(keys.transcript(job.lecture_id))
     globalMutate(keys.notes(job.lecture_id))
+    globalMutate(keys.runs(job.lecture_id))
   }
 }

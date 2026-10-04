@@ -9,6 +9,7 @@ from __future__ import annotations
 import pathlib
 import shutil
 import subprocess
+import tempfile
 
 import soundfile as sf
 
@@ -24,11 +25,21 @@ def ffmpeg_available() -> bool:
 
 
 def to_wav16k_mono(src: pathlib.Path, dst: pathlib.Path) -> pathlib.Path:
-    """Transcode `src` to 16 kHz mono WAV at `dst`."""
+    """Transcode `src` to 16 kHz mono WAV at `dst`.
+
+    Reprocess passes the already-normalised WAV as both source and dest;
+    ffmpeg refuses that in-place write, so skip when the file is already done.
+    """
+    src, dst = src.resolve(), dst.resolve()
+    if src == dst:
+        return dst
+
     if not ffmpeg_available():
         raise AudioError("ffmpeg not found on PATH — required to decode phone recordings")
 
     dst.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=dst.parent, prefix=dst.stem + "-", suffix=".wav", delete=False) as tmp:
+        temporary = pathlib.Path(tmp.name)
     cmd = [
         "ffmpeg", "-nostdin", "-y",
         "-i", str(src),
@@ -36,12 +47,16 @@ def to_wav16k_mono(src: pathlib.Path, dst: pathlib.Path) -> pathlib.Path:
         "-ar", str(SAMPLE_RATE),
         "-c:a", "pcm_s16le",
         "-vn",
-        str(dst),
+        str(temporary),
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode != 0:
-        tail = (proc.stderr or "").strip().splitlines()[-5:]
-        raise AudioError("ffmpeg failed: " + " | ".join(tail))
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            tail = (proc.stderr or "").strip().splitlines()[-5:]
+            raise AudioError("ffmpeg failed: " + " | ".join(tail))
+        temporary.replace(dst)
+    finally:
+        temporary.unlink(missing_ok=True)
     return dst
 
 

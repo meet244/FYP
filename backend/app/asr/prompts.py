@@ -34,9 +34,23 @@ def _encoder():
 
         return get_tokenizer(multilingual=True, language="hi", task="transcribe").encoding
     except Exception:  # pragma: no cover - non-Apple-silicon hosts
-        import tiktoken
+        # Use Whisper's own multilingual vocabulary on portable hosts too.
+        from faster_whisper.tokenizer import Tokenizer
+        from tokenizers import Tokenizer as HFTokenizer
 
-        return tiktoken.get_encoding("cl100k_base")
+        tok = HFTokenizer.from_pretrained("openai/whisper-tiny")
+        return _WhisperEncoding(Tokenizer(tok, multilingual=True, task="transcribe", language="hi"))
+
+
+class _WhisperEncoding:
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
+    def encode(self, text):
+        return self.tokenizer.encode(text)
+
+    def decode(self, ids):
+        return self.tokenizer.decode(ids)
 
 
 def n_tokens(text: str | None) -> int:

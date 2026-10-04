@@ -1,65 +1,57 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   ArrowUp,
   BookOpen,
   FileText,
   GitCompare,
-  History,
   ListTree,
   MessageCircle,
   PieChart,
-  Plus,
   Search,
   Sparkles,
-  Trash2,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { mutate } from 'swr'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import { Markdown } from '@/components/markdown'
-import { ask, deleteSession, getSession } from '@/lib/api/client'
-import { keys, useSessions } from '@/lib/api/hooks'
-import { relativeTime } from '@/lib/format'
+import { SgcdMachine } from '@/components/processing-stage'
+import type { SourceSelection } from '@/components/source-viewer'
+import { ask } from '@/lib/api/client'
+import { keys, useSessionMessages } from '@/lib/api/hooks'
 import { cn } from '@/lib/utils'
 import type { ChatMessage, Citation, QueryType } from '@/lib/api/types'
 
-/**
- * The router classifies every question before retrieving, and the class changes
- * what the answer is built from. Showing it is honest about that: a `coverage`
- * answer came from a database group-by with no retrieval at all, and a reader
- * should be able to tell that apart from a cited transcript lookup.
- */
-const QUERY_TYPE: Record<QueryType, { label: string; icon: React.ElementType; className: string }> = {
-  lookup: { label: 'Lookup', icon: Search, className: 'text-blue-500' },
-  explain: { label: 'Explain', icon: Sparkles, className: 'text-violet-500' },
-  summary: { label: 'Summary', icon: FileText, className: 'text-emerald-500' },
-  compare: { label: 'Compare', icon: GitCompare, className: 'text-amber-500' },
-  quiz: { label: 'Quiz', icon: BookOpen, className: 'text-pink-500' },
-  outline: { label: 'Outline', icon: ListTree, className: 'text-cyan-500' },
-  coverage: { label: 'Coverage · no retrieval', icon: PieChart, className: 'text-primary' },
-  smalltalk: { label: 'Chat', icon: MessageCircle, className: 'text-muted-foreground' },
+const QUERY_TYPE: Record<QueryType, { label: string; icon: React.ElementType }> = {
+  lookup: { label: 'Lookup', icon: Search },
+  explain: { label: 'Explain', icon: Sparkles },
+  summary: { label: 'Summary', icon: FileText },
+  compare: { label: 'Compare', icon: GitCompare },
+  quiz: { label: 'Quiz', icon: BookOpen },
+  outline: { label: 'Outline', icon: ListTree },
+  coverage: { label: 'Coverage', icon: PieChart },
+  smalltalk: { label: 'Chat', icon: MessageCircle },
 }
 
 const SUGGESTIONS = [
-  'Summarise the last lecture',
-  'What has been covered from the syllabus so far?',
-  'Give me five practice questions on this topic',
-  'Compare the two approaches the lecturer contrasted',
+  'What does the syllabus cover?',
+  'Explain the last lecture from the recording',
+  'What is on the slides or PDFs?',
+  'Give me five practice questions',
 ]
+
+function friendlyChatError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err)
+  if (/quota|RESOURCE_EXHAUSTED|\b429\b/i.test(raw)) {
+    const cut = raw.split('{')[0].trim()
+    return cut || 'Gemini quota is exhausted. Wait a minute, then try again.'
+  }
+  return raw.split('{')[0].trim() || 'Question failed'
+}
 
 function CitationList({
   citations,
@@ -70,29 +62,43 @@ function CitationList({
 }) {
   if (citations.length === 0) return null
   return (
-    <div className="mt-3 border-t border-border/50 pt-2.5">
-      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-        Sources
-      </p>
+    <div className="mt-4 border-t border-border pt-3">
+      <p className="kicker mb-2">Sources</p>
       <div className="flex flex-wrap gap-1.5">
         {citations.map((c) => (
           <button
             key={c.n}
             type="button"
             onClick={() => onOpen(c)}
-            className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-2 py-1 text-[11px] transition-colors hover:border-primary/50 hover:bg-primary/5"
+            className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] transition-colors hover:border-foreground/30"
           >
-            <span className="flex h-4 w-4 items-center justify-center rounded bg-primary/15 font-bold text-primary">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full border border-border font-mono text-[10px] text-foreground">
               {c.n}
             </span>
             <span className="max-w-[10rem] truncate text-foreground">
-              {c.lecture_title ?? 'Lecture'}
+              {c.kind === 'unit'
+                ? (c.unit_title ?? 'Syllabus')
+                : c.material_title ?? c.lecture_title ?? 'Source'}
             </span>
-            <span className="font-mono text-muted-foreground">{c.timestamp}</span>
-            {c.kind === 'note' && (
-              <Badge variant="secondary" className="h-3.5 px-1 text-[9px]">
-                notes
-              </Badge>
+            {c.timestamp && (
+              <span className="font-mono text-muted-foreground">{c.timestamp}</span>
+            )}
+            {(c.kind === 'note' ||
+              c.kind === 'unit' ||
+              c.kind === 'pdf' ||
+              c.kind === 'image' ||
+              c.kind === 'doc' ||
+              c.kind === 'span' ||
+              c.kind === 'transcript') && (
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {c.kind === 'span' || c.kind === 'transcript'
+                  ? 'voice'
+                  : c.kind === 'unit'
+                    ? 'syllabus'
+                    : c.kind === 'note'
+                      ? 'notes'
+                      : c.kind}
+              </span>
             )}
           </button>
         ))}
@@ -101,60 +107,103 @@ function CitationList({
   )
 }
 
-export function ChatPanel({ subjectId }: { subjectId: string }) {
-  const router = useRouter()
-  const { data: sessions } = useSessions(subjectId)
-  const [sessionId, setSessionId] = useState<string | null>(null)
+function Composer({
+  question,
+  setQuestion,
+  pending,
+  onSend,
+  autoFocus,
+}: {
+  question: string
+  setQuestion: (v: string) => void
+  pending: boolean
+  onSend: () => void
+  autoFocus?: boolean
+}) {
+  return (
+    <div className="relative mx-auto w-full min-w-0 max-w-2xl">
+      <div className="overflow-hidden rounded-3xl border border-border bg-background shadow-[0_1px_6px_oklch(0.22_0.02_55/0.06)]">
+        <Textarea
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              onSend()
+            }
+          }}
+          placeholder="Ask anything about this subject…"
+          rows={1}
+          autoFocus={autoFocus}
+          className="field-sizing-fixed max-h-40 min-h-[52px] w-full min-w-0 resize-none rounded-3xl border-0 bg-transparent py-3.5 pl-4 pr-14 text-[15px] shadow-none focus-visible:ring-0"
+        />
+        <Button
+          size="icon"
+          className="absolute bottom-2 right-2 h-8 w-8 rounded-full"
+          onClick={onSend}
+          disabled={pending || !question.trim()}
+          aria-label="Send"
+        >
+          <ArrowUp className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+export function ChatPanel({
+  subjectId,
+  subjectName,
+  resetNonce = 0,
+  selectedSessionId = null,
+  onSessionChange,
+  onOpenSource,
+}: {
+  subjectId: string
+  subjectName?: string
+  resetNonce?: number
+  selectedSessionId?: string | null
+  onSessionChange?: (id: string) => void
+  onOpenSource: (source: SourceSelection) => void
+}) {
+  const [sessionId, setSessionId] = useState<string | null>(selectedSessionId)
+  const { data: saved, error: historyError, isLoading: historyLoading } = useSessionMessages(selectedSessionId)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [question, setQuestion] = useState('')
   const [pending, setPending] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false }
+  }, [])
+  const empty = messages.length === 0 && !pending
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (saved) setMessages(saved)
+  }, [saved])
+
+  useEffect(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight
   }, [messages, pending])
 
-  const openSession = async (id: string) => {
-    try {
-      const history = await getSession(id)
-      setSessionId(id)
-      setMessages(history)
-    } catch (err) {
-      toast.error('Could not open that conversation', {
-        description: err instanceof Error ? err.message : String(err),
-      })
-    }
-  }
-
-  const newSession = () => {
+  useEffect(() => {
+    if (!resetNonce || selectedSessionId) return
     setSessionId(null)
     setMessages([])
-  }
-
-  const removeSession = async (id: string) => {
-    try {
-      await deleteSession(id)
-      await mutate(keys.sessions(subjectId))
-      if (id === sessionId) newSession()
-    } catch (err) {
-      toast.error('Could not delete conversation', {
-        description: err instanceof Error ? err.message : String(err),
-      })
-    }
-  }
+    setQuestion('')
+  }, [resetNonce, selectedSessionId])
 
   const openCitation = (c: Citation) => {
-    if (!c.lecture_id) return
-    const t = c.start_s != null ? `?t=${Math.floor(c.start_s)}` : ''
-    router.push(`/lectures/${c.lecture_id}${t}`)
+    onOpenSource(c)
   }
 
   const send = async (text?: string) => {
     const q = (text ?? question).trim()
     if (!q || pending) return
 
-    // Optimistic user turn — the round trip includes routing, retrieval and a
-    // full generation, so the question must not sit in the box looking ignored.
     const optimistic: ChatMessage = {
       id: `local-${Date.now()}`,
       role: 'user',
@@ -169,6 +218,10 @@ export function ChatPanel({ subjectId }: { subjectId: string }) {
 
     try {
       const res = await ask(subjectId, q, sessionId)
+      if (!mounted.current) {
+        void mutate(keys.sessions(subjectId))
+        return
+      }
       setSessionId(res.session_id)
       setMessages((m) => [
         ...m,
@@ -182,108 +235,63 @@ export function ChatPanel({ subjectId }: { subjectId: string }) {
         },
       ])
       await mutate(keys.sessions(subjectId))
+      await mutate(keys.session(res.session_id))
+      if (mounted.current) onSessionChange?.(res.session_id)
     } catch (err) {
+      if (!mounted.current) return
       setMessages((m) => m.filter((x) => x.id !== optimistic.id))
       setQuestion(q)
       toast.error('Question failed', {
-        description: err instanceof Error ? err.message : String(err),
+        description: friendlyChatError(err),
       })
     } finally {
-      setPending(false)
+      if (mounted.current) setPending(false)
     }
   }
 
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2.5">
-        <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
-          {sessionId
-            ? (sessions?.find((s) => s.id === sessionId)?.title ?? 'Conversation')
-            : 'New conversation'}
-        </span>
+  const composer = (
+    <Composer
+      question={question}
+      setQuestion={setQuestion}
+      pending={pending}
+      onSend={() => send()}
+      autoFocus={empty}
+    />
+  )
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7" title="Past conversations">
-              <History className="h-3.5 w-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72">
-            {sessions && sessions.length > 0 ? (
-              sessions.map((s) => (
-                <DropdownMenuItem
-                  key={s.id}
-                  onSelect={() => openSession(s.id)}
-                  className="flex items-start gap-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-foreground">{s.title}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {s.message_count} messages · {relativeTime(s.updated_at)}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      e.preventDefault()
-                      removeSession(s.id)
-                    }}
-                    className="mt-0.5 shrink-0 text-muted-foreground hover:text-destructive"
-                    aria-label="Delete conversation"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </DropdownMenuItem>
-              ))
-            ) : (
-              <div className="px-2 py-4 text-center text-xs text-muted-foreground">
-                No past conversations.
-              </div>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+  if (historyLoading || historyError) return <p className="p-6 text-sm text-muted-foreground">
+    {historyError ? 'Could not load this chat. Select it again to retry.' : 'Loading chat…'}
+  </p>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={newSession}
-          title="New conversation"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
+  if (empty) {
+    return (
+      <div className="flex h-full min-h-0 flex-col items-center overflow-y-auto px-4 pb-16" style={{ justifyContent: 'safe center' }}>
+        <div className="w-full min-w-0 max-w-2xl">
+          <h2 className="mb-6 text-center font-display text-[1.65rem] leading-tight tracking-tight text-foreground sm:mb-8 sm:text-3xl lg:text-4xl">
+            {subjectName ? `What can I help with in ${subjectName}?` : 'What can I help with?'}
+          </h2>
+          {composer}
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => send(s)}
+                className="rounded-full border border-border bg-background px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
+    )
+  }
 
-      <ScrollArea className="flex-1">
-        <div className="space-y-4 p-4">
-          {messages.length === 0 && !pending && (
-            <div className="py-10 text-center">
-              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-                <Sparkles className="h-5 w-5 text-primary" />
-              </div>
-              <h4 className="mb-1 text-sm font-semibold text-foreground">
-                Ask across this subject
-              </h4>
-              <p className="mx-auto mb-5 max-w-xs text-xs leading-relaxed text-muted-foreground">
-                Answers are built from your own recordings and cite the moment each claim was made.
-              </p>
-              <div className="mx-auto flex max-w-sm flex-col gap-1.5">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => send(s)}
-                    className="rounded-lg border border-border/60 px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
           <AnimatePresence initial={false}>
             {messages.map((m) => {
               const meta = m.query_type ? QUERY_TYPE[m.query_type] : null
@@ -292,28 +300,21 @@ export function ChatPanel({ subjectId }: { subjectId: string }) {
               return (
                 <motion.div
                   key={m.id}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}
                 >
                   {m.role === 'user' ? (
-                    <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2 text-sm text-primary-foreground">
+                    <div className="max-w-[80%] rounded-2xl bg-secondary px-4 py-2.5 text-[15px] leading-relaxed text-foreground">
                       {m.content}
                     </div>
                   ) : (
-                    <div className="w-full rounded-2xl rounded-bl-md border border-border/60 bg-card px-3.5 py-3">
+                    <article className="w-full min-w-0">
                       {meta && Icon && (
-                        <div className="mb-2 flex items-center gap-1.5">
-                          <Icon className={cn('h-3 w-3', meta.className)} />
-                          <span
-                            className={cn(
-                              'text-[10px] font-bold uppercase tracking-widest',
-                              meta.className
-                            )}
-                          >
-                            {meta.label}
-                          </span>
-                        </div>
+                        <p className="kicker mb-2 flex items-center gap-1.5">
+                          <Icon className="h-3 w-3" />
+                          {meta.label}
+                        </p>
                       )}
 
                       <Markdown
@@ -328,7 +329,7 @@ export function ChatPanel({ subjectId }: { subjectId: string }) {
                       {m.citations && (
                         <CitationList citations={m.citations} onOpen={openCitation} />
                       )}
-                    </div>
+                    </article>
                   )}
                 </motion.div>
               )
@@ -336,49 +337,13 @@ export function ChatPanel({ subjectId }: { subjectId: string }) {
           </AnimatePresence>
 
           {pending && (
-            <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
-              <span className="flex gap-1">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary"
-                    style={{ animationDelay: `${i * 120}ms` }}
-                  />
-                ))}
-              </span>
-              Routing, retrieving, answering…
-            </div>
+            <SgcdMachine compact label="Finding your answer" detail="Reading your subject’s sources and preparing a cited response…" />
           )}
-
-          <div ref={bottomRef} />
         </div>
-      </ScrollArea>
+      </div>
 
-      <div className="border-t border-border/60 p-3">
-        <div className="relative">
-          <Textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                send()
-              }
-            }}
-            placeholder="Ask about these lectures…"
-            rows={1}
-            className="max-h-40 resize-none py-2.5 pr-11 text-sm"
-          />
-          <Button
-            size="icon"
-            className="absolute bottom-1.5 right-1.5 h-7 w-7"
-            onClick={() => send()}
-            disabled={pending || !question.trim()}
-            aria-label="Send"
-          >
-            <ArrowUp className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+      <div className="shrink-0 px-4 pb-4 pt-1 sm:px-6 sm:pb-5">
+        {composer}
       </div>
     </div>
   )

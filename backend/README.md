@@ -1,181 +1,128 @@
-# ClassScribe — backend
+# ClassScribe backend
 
-Records classroom lectures, transcribes them with **Syllabus-Grounded Contextual
-Decoding (SGCD)**, turns the transcripts into structured study notes, and answers
-questions over the resulting corpus with citations back to the recording.
+FastAPI service for subjects, syllabus PDFs, lecture recordings, study notes,
+learning outcomes, supporting files, coverage, and source-cited chat.
 
-The transcription core is the method from [`../research`](../research) — see
-[`research/paper/ClassScribe_Research_Paper.tex`](../research/paper/ClassScribe_Research_Paper.tex).
-Everything here is inference-time; nothing is trained.
+**Qwen3-ASR-0.6B is the default local speech model.** It had the lowest strict
+WER among the five baseline checkpoints on the project's matched 150-utterance
+Hindi–English benchmark. This is a choice for this corpus and its dual-script
+transcript convention, not a claim of universal superiority. See
+[implementation and research audit](IMPLEMENTATION_STATUS.md).
 
-## The pipeline
+## Run locally
 
-```
-phone recording ──ffmpeg──▶ 16 kHz mono
-                              │
-                              ├─ segment into ~25 s spans        (segment.py)
-                              ├─ pass 1: unconditioned decode    (backends.py)
-                              ├─ retrieve k=3 syllabus units     (retrieve.py)
-                              ├─ pass 2: conditioned on prose    (prompts.py)
-                              └─ stability safeguard             (sgcd.py)
-                                        │
-                            transcript spans ──▶ notes + outcomes + terms
-                                        │              │
-                                        └──────┬───────┘
-                                               ▼
-                                     vector index (Chroma)
-                                               ▼
-                                    subject-scoped chat + citations
-```
-
-Cost is **one supplementary decode per span** — retrieval reuses the first-pass
-hypothesis the baseline produces anyway.
-
-## Three things that are load-bearing
-
-**Span length is a precondition, not a tuning knob.** At the corpus's native 5.7 s
-utterances, conditioning *regresses* WER by 5.11 points and needs the safeguard to
-break even. At 26.2 s spans it gives −6.23 unaided. `span_target_s` defaults to
-25 s, inside the 30 s encoder receptive field. Lowering it silently reverts the
-system to the regime where the method does not work.
-
-**The prompt must be narration, never a term list.** Feeding the syllabus as
-comma-separated terminology reproduces the published failure mode: terminology
-error halves, everything else degrades, aggregate WER +19.39. The same content as
-fluent code-mixed prose gets the terminology gain with no collateral damage. This
-is why syllabus ingestion is an LLM *rewrite* rather than PDF text extraction —
-see [`app/ingest/syllabus.py`](app/ingest/syllabus.py).
-
-**Safeguard thresholds do not transfer across checkpoints.** The defaults were
-fitted on a development split for `whisper-large-v3-turbo`. Applied unchanged to a
-smaller model they fired on 46% of utterances and made results worse. Change the
-ASR model → refit or disable.
-
-## Setup
+Use Python 3.11 and FFmpeg:
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env          # add ANTHROPIC_API_KEY
-brew install ffmpeg           # required — phone audio is m4a/aac
-.venv/bin/uvicorn app.main:app --reload
+python3.11 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cp .env.example .env
+# Set GEMINI_API_KEY in .env for generated notes, syllabus parsing, and image OCR.
+# macOS: brew install ffmpeg
+.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Interactive API docs at `http://127.0.0.1:8000/docs`; `GET /health` echoes the
-active SGCD configuration.
+Run one Uvicorn process. The durable job table is coordinated by an in-process
+worker; multiple server processes are not supported. Open `/docs` for the full
+API contract. First use downloads model weights; later runs use the local cache.
+If the Hugging Face Xet transport stalls, start with `HF_HUB_DISABLE_XET=1`.
 
-On Apple silicon the default backend is `mlx-whisper` (5.5–15.7× real time on a
-consumer laptop, per the paper). Elsewhere set `CLASSSCRIBE_ASR_BACKEND=faster-whisper`
-and `CLASSSCRIBE_ASR_MODEL=large-v3`. The first transcription downloads the model.
+Audio recognition, embeddings, SQLite, Chroma and files run locally. Gemini
+receives the text needed for notes, syllabus rewriting, and composed chat;
+image extraction sends image bytes. This is **not** a fully offline LLM pipeline.
+Without a Gemini credential, transcripts remain available, chat can quote local
+sources, and coverage works. Notes, syllabus parsing, and image extraction need
+that credential. A failed notes stage can be retried without decoding audio.
 
-## Typical flow
+## Recognition
+
+The default is Qwen S5 domain-LM rescoring over roughly 25-second spans: a
+five-beam candidate search followed by local rescoring, with no second decode.
+For faster processing of long recordings, choose `baseline` (single-candidate
+greedy decoding); transcript accuracy may differ from S5. Upload
+`model_id`, `language` (`hi`, `en`, `auto`), and `method` (`baseline`, `s5`, `sgcd`) as
+form fields, or send those fields as JSON to the reprocess endpoint. The resolved
+configuration is saved with each job and successful transcript run.
+
+On Apple silicon, Qwen uses the MPS GPU. Audio jobs share a single resident
+model and run serially to bound unified-memory usage. Increasing worker count
+does not parallelize speech decoding. Changing upload controls applies to new
+uploads; existing jobs keep their saved configuration. Changing a running
+recording's decoding configuration invalidates its span checkpoint.
+
+| Model ID | Runtime | Role |
+| --- | --- | --- |
+| `qwen-0.6b` | Transformers / Torch, MPS, CUDA or CPU | Recommended default, Hindi–English |
+| `whisper-turbo` | MLX on Apple silicon, faster-whisper elsewhere | Alternative; original SGCD checkpoint |
+| `whisper-large-v3` | MLX / faster-whisper | Alternative; turbo safeguard thresholds disabled |
+| `qwen-1.7b` | Transformers / Torch | Optional comparison; larger memory cost, script caveat |
+| `parakeet-rnnt-1.1b` | parakeet-mlx on Apple silicon | Optional English-only comparison, no syllabus prompts |
+
+Install `requirements-asr-extra.txt` only if you want the optional Parakeet
+adapter. `/asr/models` reports installed runtimes and supported capabilities;
+installed runtime does not mean weights have already downloaded. Only the
+recommended model is loaded by default. Alternative models are explicit choices.
+
+`sgcd` adds retrieved syllabus narration and a second decode. Whisper turbo's
+fitted logprob/compression/length safeguards apply only to that checkpoint;
+empty-output and repetition checks are separate. Qwen syllabus conditioning is
+experimental: the Whisper experiments do not validate it. Prompts use prose,
+not keyword lists. Short-span conditioning regressed in the original study.
+
+## API flows
+
+| Endpoint | Result |
+| --- | --- |
+| `GET /health`, `GET /asr/models` | Configuration, credential presence, model capabilities |
+| `POST,GET /subjects`; `GET,DELETE /subjects/{id}` | Subject management |
+| `POST,GET /subjects/{id}/syllabus` | PDF parsing job / parsed units |
+| `PATCH /subjects/{id}/syllabus/units/{unit_id}` | Correct narration and refresh retrieval |
+| `GET /subjects/{id}/coverage` | Note-linked coverage and outstanding units |
+| `POST,GET /subjects/{id}/lectures` | Upload recording job / lecture library |
+| `GET,DELETE /lectures/{id}` | Lecture metadata / removal |
+| `GET /lectures/{id}/transcript`, `/notes`, `/audio` | Current transcript, notes, playable WAV |
+| `POST /lectures/{id}/reprocess` | Decode stored recording with selected options |
+| `POST /lectures/{id}/notes/regenerate` | Regenerate notes without another ASR pass |
+| `GET /lectures/{id}/runs`; `GET /lectures/{id}/runs/{run_id}` | Saved configuration, statistics and historical spans |
+| `POST,GET /subjects/{id}/materials` | Upload PDF, image, TXT, Markdown, CSV, DOCX or PPTX / list files |
+| `GET /materials/{id}`; `GET /materials/{id}/file`; `DELETE /materials/{id}` | Extracted-text preview / inline original / remove file |
+| `GET /subjects/{id}/syllabus/file` | Inline original syllabus PDF |
+| `POST /subjects/{id}/chat` | Grounded answer and source citations |
+| `GET /subjects/{id}/chat/sessions`; `GET,DELETE /chat/sessions/{id}` | Persistent conversation history |
+| `GET /jobs`; `GET /jobs/{id}` | Durable status, stage, progress and errors |
+| `POST /jobs/{id}/cancel`, `/retry` | Cancel at a safe stage boundary / retry failed or cancelled job |
+
+Long operations return `202`. Poll jobs until `succeeded`, `failed`, or
+`cancelled`. Running cancellation first reports `cancelling`; the current model
+call may finish before the worker stops. Conflicting operations on the same
+lecture and deletion during active work return `409`.
+
+Jobs recover on process restart. Audio normalization and span checkpoints use
+atomic replacement. Finished decode spans resume on retry when audio, syllabus,
+and configuration match; changed inputs invalidate the checkpoint. Successful
+ASR runs retain historical spans even when current transcripts are replaced.
+Old notes are removed when their transcript changes. The frontend restores job
+progress after a refresh and exposes retries, history, saved chats and syllabus.
+
+Uploads stream with a configurable per-file limit (`CLASSSCRIBE_MAX_UPLOAD_MB`,
+default 1024). Partial writes are removed; material batches roll back together.
+Existing local databases get additive columns without resetting stored lectures.
+CORS allows localhost frontend origins; configure `CLASSSCRIBE_CORS_ORIGINS` as
+a JSON list if needed. This application currently has no multi-user authentication.
+
+## Verification
 
 ```bash
-# 1. create a subject
-curl -X POST localhost:8000/subjects -H 'content-type: application/json' \
-     -d '{"name":"Operating Systems","code":"ITC501"}'
-
-# 2. upload the syllabus PDF  -> returns a job
-curl -X POST localhost:8000/subjects/$SID/syllabus -F file=@syllabus.pdf
-
-# 3. upload a recording       -> returns a job
-curl -X POST localhost:8000/subjects/$SID/lectures \
-     -F file=@lecture1.m4a -F title='Process scheduling'
-
-# 4. poll
-curl localhost:8000/jobs/$JOB_ID
-
-# 5. ask
-curl -X POST localhost:8000/subjects/$SID/chat -H 'content-type: application/json' \
-     -d '{"question":"What is the difference between paging and segmentation?"}'
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest tests/ -q
 ```
 
-Upload the syllabus **before** the first lecture. Without one the pipeline runs a
-single unconditioned pass — correct behaviour, but none of the method's benefit.
-`POST /lectures/{id}/reprocess` re-decodes stored audio once a syllabus exists.
+Tests always use a temporary database and storage. They cover the upload → audio
+conversion → ASR → notes → coverage pipeline with stubs, model validation,
+checkpoint recovery, cancellation during failure, notes-only retries, historical
+runs, chat persistence, batch rollback, and additive database migration. Stubbed
+tests verify integration, not recognition quality. Research evaluation remains
+in `../research`; fixtures in `../test` are demonstration audio and documents.
 
-## API
-
-| | |
-|---|---|
-| `POST /subjects` · `GET /subjects` · `GET,DELETE /subjects/{id}` | subjects |
-| `POST /subjects/{id}/syllabus` | upload PDF → job |
-| `GET /subjects/{id}/syllabus` | parsed units |
-| `PATCH /subjects/{id}/syllabus/units/{unit_id}` | hand-correct a unit |
-| `GET /subjects/{id}/coverage` | units delivered vs outstanding |
-| `POST /subjects/{id}/lectures` | upload recording → job |
-| `GET /subjects/{id}/lectures` · `GET,DELETE /lectures/{id}` | lectures |
-| `GET /lectures/{id}/transcript` | spans + full text + ASR stats |
-| `GET /lectures/{id}/notes` | notes, terms, learning outcomes |
-| `GET /lectures/{id}/audio` | normalised WAV, for timestamp seeking |
-| `POST /lectures/{id}/reprocess` | re-decode stored audio |
-| `POST /subjects/{id}/chat` | ask a question |
-| `GET /subjects/{id}/chat/sessions` · `GET,DELETE /chat/sessions/{id}` | history |
-| `GET /jobs/{id}` · `GET /jobs` | job status |
-
-Long operations return `202` with a job; poll `progress` (0–1), `stage`, `message`.
-
-## Query routing
-
-The chat endpoint classifies each question before retrieving, because the same
-corpus answers different question shapes differently:
-
-| type | behaviour |
-|---|---|
-| `lookup` | transcript-first, two or three sentences |
-| `explain` | conceptual, built from the lecturer's framing |
-| `summary` / `outline` | notes-first, structured |
-| `compare` | point-by-point, table where dimensions are clean |
-| `quiz` | practice questions, then an answers section |
-| `coverage` | answered from the database, **no retrieval** — it is a computable fact |
-| `smalltalk` | short reply, no retrieval |
-
-Answers cite `[n]` markers resolving to `{lecture_id, timestamp}` so the frontend
-can link straight into the audio.
-
-## Layout
-
-```
-app/
-  asr/        segment · backends · prompts · retrieve · sgcd · normalize
-  ingest/     audio (ffmpeg) · syllabus (PDF → code-mixed units)
-  notes/      synthesize (notes, terms, outcomes) · coverage
-  rag/        store (Chroma) · indexer · router · answer
-  jobs/       queue (worker thread) · handlers (pipelines)
-  api/        subjects · lectures · chat · jobs
-  models.py   ORM      schemas.py  API contract      views.py  detached rows
-tests/        test_smoke.py     units + API surface
-              test_pipeline.py  end-to-end with the model and LLM stubbed
-```
-
-`app/asr/normalize.py` is ported verbatim from the research so transcripts stay
-comparable with the published numbers. Do not edit it.
-
-## Tests
-
-```bash
-CLASSSCRIBE_DATA_DIR=./data/test CLASSSCRIBE_DB_URL="sqlite:///./data/test/test.db" \
-  .venv/bin/python -m pytest tests/ -q
-```
-
-27 tests, ~16 s, no model download and no API key. Covers segmentation bounds,
-retrieval ranking under a noisy first pass, prompt construction and
-left-truncation, all three safeguard triggers, normalisation parity, the API
-surface, and a full upload → ffmpeg → two-pass decode → notes → coverage run with
-the ASR backend and LLM stubbed.
-
-The stubs assert *plumbing*, not recognition quality — quality is what
-[`../research`](../research) measures, against references this backend doesn't have.
-
-## Known limits
-
-- **Jobs are in-process.** A restart mid-transcription requeues the job from the
-  start (`requeue_stale()`); there is no resume-from-span. Fine for one machine,
-  not for a multi-worker deployment.
-- **SQLite.** Single-writer. Long LLM calls are deliberately made outside any open
-  session, but concurrent transcriptions will contend. Move to Postgres before
-  serving a cohort.
-- **Scanned syllabi fail.** `pypdf` extracts text, not images — OCR first.
-- **Notes and chat need an API key**; transcription does not. Without a key,
-  transcription still completes and the lecture stops at `transcribed`.
-- **The evaluation harness lives in `../research`,** not here. This backend has no
-  WER scoring — it has no references to score against.
+Known remaining requirements and the real-runtime verification record are in
+[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).

@@ -60,7 +60,7 @@ export function CreateSubjectDialog({ trigger }: { trigger?: React.ReactNode }) 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button size="sm" className="gap-1.5 shadow-md shadow-primary/20">
+          <Button size="sm" className="w-full gap-1.5 sm:w-auto">
             <Plus className="h-3.5 w-3.5" /> New subject
           </Button>
         )}
@@ -69,7 +69,7 @@ export function CreateSubjectDialog({ trigger }: { trigger?: React.ReactNode }) 
       <DialogContent className="sm:max-w-md">
         <form onSubmit={submit}>
           <DialogHeader>
-            <DialogTitle>New subject</DialogTitle>
+            <DialogTitle className="font-display text-2xl font-normal">New subject</DialogTitle>
             <DialogDescription>
               One subject per course. Chat is scoped to a subject so an Operating Systems question
               never retrieves from your Networks lectures.

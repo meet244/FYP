@@ -120,7 +120,7 @@ export function TranscriptView({
         </div>
 
         {visible.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border/60 p-10 text-center text-sm text-muted-foreground">
+          <p className="border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
             {spans.length === 0 ? 'No transcript spans yet.' : 'No spans match this filter.'}
           </p>
         ) : (
@@ -133,15 +133,17 @@ export function TranscriptView({
                   ref={active ? activeRef : undefined}
                   onClick={() => onSeek(s.start_s)}
                   className={cn(
-                    'group flex cursor-pointer gap-3 rounded-lg px-2.5 py-2 transition-colors',
-                    active ? 'bg-primary/10' : 'hover:bg-muted/50'
+                    'group flex cursor-pointer gap-3 border-l-2 px-2.5 py-2.5 transition-colors',
+                    active
+                      ? 'border-foreground bg-muted/40'
+                      : 'border-transparent hover:bg-muted/30'
                   )}
                 >
                   <button
                     type="button"
                     className={cn(
                       'shrink-0 pt-0.5 font-mono text-xs tabular-nums transition-colors',
-                      active ? 'font-semibold text-primary' : 'text-muted-foreground group-hover:text-primary'
+                      active ? 'font-medium text-foreground' : 'text-muted-foreground group-hover:text-foreground'
                     )}
                   >
                     {timestamp(s.start_s)}

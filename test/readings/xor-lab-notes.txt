@@ -1,0 +1,26 @@
+ITC604 Lab 2 notes — XOR is not linearly separable
+====================================================
+
+Four points, two classes:
+
+  x1  x2  |  class
+  0    0  |  0
+  0    1  |  1
+  1    0  |  1
+  1    1  |  0
+
+A single perceptron draws one straight line. No line puts (0,1) and (1,0) on
+one side and (0,0) and (1,1) on the other. Proof by contradiction is in
+perceptron-learning-handout.pdf section 2. The picture is xor-decision-regions.png.
+
+Hand-designed 2-2-1 network (step activations):
+
+  h1 = step(  x1 - x2 - 0.5)     # fires on (1,0)
+  h2 = step( -x1 + x2 - 0.5)     # fires on (0,1)
+  y  = step(  h1 + h2 - 0.5)     # OR
+
+After Lecture 3, replace step with sigmoid or ReLU and train with backprop
+instead of designing h1 and h2.
+
+Expected lab output: training loss of a 2-2-1 MLP on XOR below 0.05 after 200
+epochs with eta = 0.5, sigmoid hidden and output, mean squared error.
