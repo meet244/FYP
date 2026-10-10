@@ -31,14 +31,26 @@ Start the backend separately, then open `http://localhost:3000`.
   leaving the conversation or automatically downloading files. PDFs and images
   show the original; Office and text documents show extracted text. Recording
   citations show the transcript, cited notes, and audio at the cited timestamp.
+- Studio: generate quizzes, flashcards, mind maps, reports, slide decks, and
+  infographics from a whole subject, syllabus unit, or recording. Quizzes have
+  hints, answers, explanations, and source references; flashcards support recall
+  practice. Reports offer study guide, briefing, FAQ, and glossary formats.
+  Use the customization controls for focus, supported item counts, and quiz
+  difficulty. Items are saved and support reopening, failure retry, and deletion.
+  Chat requests such as "make a quiz on unit 2" create the same Studio items.
 
 The header reports the configured model and missing FFmpeg/Gemini configuration.
 Standard recognition is one pass. Syllabus narration adds a second pass and is
 experimental on Qwen; published Whisper gains are not displayed as Qwen results.
 
-Without a Gemini key, local transcription and source-quoted chat work; generated
-notes, syllabus parsing and image extraction require configuration. The API
-allows localhost frontend origins by default; see the backend configuration for
+Without a Gemini key, local transcription and source-quoted chat work. Generated
+notes, syllabus parsing, image extraction, composed answers, and Studio
+generation require Gemini configuration. Generation
+runs separately from transcription, so a quiz does not queue behind ASR.
+Multiple output formats do not constitute student/tutor perspective-conditioned
+summarisation or evidence of improved learning outcomes.
+
+The API allows localhost frontend origins by default; see the backend configuration for
 other origins. This is a single-machine application without user authentication.
 
 Verify types and production output:
@@ -50,3 +62,8 @@ npm run build
 
 See [implementation and research audit](../backend/IMPLEMENTATION_STATUS.md) for
 what was missing, what is now connected, verification and remaining research.
+
+The [results summary](../results.md) distinguishes ASR experiments from the
+workflow demonstrations in [dump/](../dump/). These demonstrations show source
+previews and timestamp navigation; they do not measure citation correctness or
+note quality.

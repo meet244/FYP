@@ -1,89 +1,163 @@
-Follow-up queued. Meanwhile, four of five done:
+# ClassScribe research results
 
-┌────────────────────────┬───────┬──────────┬───────┬─────────┬─────────┬──────────────┬───────┬───────┬─────────┐
-│         Model          │ WER % │ WER-sa % │ CER % │ K-WER % │ U-WER % │ script fid % │  RTF  │ speed │   RAM   │
-├────────────────────────┼───────┼──────────┼───────┼─────────┼─────────┼──────────────┼───────┼───────┼─────────┤
-│ Qwen3-ASR-0.6B         │ 59.74 │ 50.39    │ 50.49 │ 44.66   │ 39.92   │ 47.2         │ 0.339 │ 2.95× │ 1.41 GB │
-├────────────────────────┼───────┼──────────┼───────┼─────────┼─────────┼──────────────┼───────┼───────┼─────────┤
-│ Qwen3-ASR-1.7B         │ 63.24 │ 47.94    │ 57.26 │ 92.23   │ 39.45   │ 8.4          │ 1.209 │ 0.83× │ 1.26 GB │
-├────────────────────────┼───────┼──────────┼───────┼─────────┼─────────┼──────────────┼───────┼───────┼─────────┤
-│ Whisper large-v3       │ 74.17 │ 61.94    │ 62.39 │ 63.59   │ 42.63   │ 34.4         │ 0.761 │ 1.31× │ 0.61 GB │
-├────────────────────────┼───────┼──────────┼───────┼─────────┼─────────┼──────────────┼───────┼───────┼─────────┤
-│ Whisper large-v3-turbo │ 80.23 │ 66.61    │ 65.62 │ 65.53   │ 43.71   │ 32.8         │ 0.229 │ 4.36× │ 0.58 GB │
-└────────────────────────┴───────┴──────────┴───────┴─────────┴─────────┴──────────────┴───────┴───────┴─────────┘
+Documentation review: 2026-10-10. This report consolidates saved experiments and
+the supporting material in [dump/](dump/). No new decoding, training, or
+classroom-quality experiment was performed for this update.
 
-Read the 1.7B row carefully — it is not what it looks like. Script fidelity 8.4% and K-WER 92% with U-WER 39.45% (the best of any model) is a contradiction that only resolves one way. Sample output:
+## Experiments must be read separately
 
-REF: 1 index 1 पर argument को दिखाता है
-1.7B: वन इंडेक्स वन पर आर्गुमेंट को दिखाता है।     ← "one index one … argument", in Devanagari
-0.6B: One index one पर argument को दिखाता है      ← same words, Latin script
+| Experiment | Model / condition | Evaluation sample | Primary evidence |
+| --- | --- | --- | --- |
+| Cross-model benchmark | Five checkpoints, zero prompt | 150 Hindi-English utterances; 862 seconds of audio | [Benchmark table](research/sgcd/out/tables/bench__test.md) and [JSON](research/sgcd/out/bench_scores__test.json) |
+| FYRP improvement comparison | Qwen3-ASR-0.6B, S0 plus ten independent methods | 50 utterances from the frozen 150-utterance TEST subset | [Detailed report](research/sgcd/out/fyrp/results.md) and [JSON](research/sgcd/out/fyrp/results.json) |
+| Original SGCD study | Whisper turbo, alternative decoder contexts | 150 short utterances and a separate 100-span concatenated evaluation | [Comparison](research/sgcd/COMPARISON.md) and [run log](research/sgcd/RUNLOG.md) |
 
-Forced to language="Hindi", the 1.7B commits hard to Devanagari and transliterates every English technical term. It heard the words correctly — its WER-sa of 47.94 is the best score in the table — but the SLR104 reference writes those terms in Latin, so strict WER punishes every one.
+The SLR104 Hindi-English test tarball is internally split into lecture-disjoint
+DEV and TEST sets; the official training tarball is not used. FYRP training
+uses the internal DEV lectures, not TEST references.
 
-- Fixable at inference, not by retraining: the language hint is the lever. I'm re-running the 1.7B with auto-detect (--language none) to see if it preserves Latin script.
-  ─────────────────────────────────────────────────
+Saved metrics are present for all three experiments. Original Whisper
+hypotheses are available, but Qwen/Parakeet benchmark hypotheses and the FYRP
+hypothesis directory are absent in this checkout. The later numbers can be
+checked against saved JSON; independent rescoring requires recreating outputs.
 
-Parakeet (4.3 GB) downloading; the 1.7B auto-detect rerun follows it.
+## 1. Five-model baseline benchmark
 
-  Ran 1 shell command
+Recorded hardware: MacBook Air M3 with 8 GB unified memory. Each checkpoint runs
+in its own process on the same frozen audio. Whisper uses Hindi transcription;
+Qwen uses the forced Hindi language hint; Parakeet is an English-only checkpoint.
 
-Waiting on Parakeet.
+| Model | WER % | WER-sa % | CER % | K-WER % | U-WER % | Speed | Peak process RSS GB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen3-ASR-0.6B | 59.74 | 50.39 | 50.49 | 44.66 | 39.92 | 2.95x | 1.41 |
+| Qwen3-ASR-1.7B | 63.24 | 47.94 | 57.26 | 92.23 | 39.45 | 0.83x | 1.26 |
+| Whisper large-v3 | 74.17 | 61.94 | 62.39 | 63.59 | 42.63 | 1.31x | 0.61 |
+| Whisper large-v3-turbo | 80.23 | 66.61 | 65.62 | 65.53 | 43.71 | 4.36x | 0.58 |
+| Parakeet RNNT 1.1B | 97.45 | 81.93 | 81.53 | 37.86 | 91.54 | 13.18x | 0.99 |
 
-✻ Brewed for 1m 2s · done 3:00 PM
+Speed is audio duration divided by decode time. Process RSS is not a complete
+measurement of GPU/unified-memory use. These measurements describe this run.
 
-※ recap: Benchmarking 5 ASR models on OpenSLR 104 Hindi-English test set. Qwen3-ASR-0.6B leads at 59.7% WER, both Whispers trail at 74-80%. Waiting on Parakeet 1.1B to finish downloading and decoding, then a Qwen 1.7B auto-language rerun. (disable recaps in /config)
+Qwen3-ASR-0.6B has the lowest strict WER: **59.74%**. Its gap to Whisper large-v3
+is **14.43 percentage points**, and to turbo is **20.49 points**. These are
+benchmark differences, not measured gains from changing the application.
 
-⏺ Background command "Prefetch all four remaining models sequentially" completed (exit code 0)
+Qwen 1.7B has the lowest transliteration-tolerant WER (47.94%) and non-keyword
+error (39.45%), but often writes English terms in Devanagari with forced Hindi.
+Auto-language control still needs a completed held-out evaluation. Parakeet's
+low keyword error must be read alongside its **91.54% non-keyword error**:
+English terminology alone does not establish bilingual recognition quality.
 
-  Ran 1 shell command
+The original SGCD short-utterance table records turbo C0 at **85.69%**, while
+this later benchmark records **80.23%**. These are separate saved runs; the
+reviewed material does not establish the exact cause of the difference.
+Use each experiment's own baseline rather than combining the figures.
 
-All weigh
+## 2. Ten independent Qwen improvement methods
 
-  Ran 1 shell command
+Settings were selected on 30 DEV tuning utterances and frozen. Each method is
+applied independently to S0; methods are not stacked. There are **11 rows:
+the baseline plus ten alternatives**. The glossary and language-model text
+exclude tuning references and use DEV lecture text plus research syllabuses.
 
-All five complete.
+| Rank | Method | WER % | Delta vs S0 (points) | Reported 95% CI | K-WER % |
+| ---: | --- | ---: | ---: | --- | ---: |
+| 1 | S5: N-best rescoring with domain n-gram LM | 55.69 | -3.18 | [-6.3, -0.2] | 42.17 |
+| 2 | S8: TTS synthetic data (partial FT on TTS only) | 55.85 | -3.01 | [-6.8, +0.8] | 20.48 |
+| 3 | S3: Context biasing via system prompt | 57.36 | -1.51 | [-4.8, +1.3] | 49.40 |
+| 4 | S4: BM25 retrieval-constrained span correction | 58.03 | -0.84 | [-2.0, +0.2] | 48.19 |
+| 5 | S0: Baseline (Qwen3-ASR-0.6B, greedy, no context) | 58.86 | - | - | 50.60 |
+| 6 | S7: Embedding-only tuning (tokenizer expansion) | 58.86 | +0.00 | [+0.0, +0.0] | 50.60 |
+| 7 | S1: Fuzzy / edit-distance lexicon correction | 58.86 | +0.00 | [-0.8, +0.8] | 49.40 |
+| 8 | S6: Shallow fusion (n-gram LM in decoding) | 60.03 | +1.17 | [-1.8, +4.4] | 62.65 |
+| 9 | S2: Phonetic matching for code-switched OOV | 60.37 | +1.51 | [-0.5, +3.5] | 42.17 |
+| 10 | S10: LoRA r=8 enc+dec attention (real+TTS) | 62.21 | +3.34 | [-9.0, +22.3] | 39.76 |
+| 11 | S9: Partial FT, last-4 decoder layers (real+TTS) | 67.22 | +8.36 | [-0.6, +18.9] | 31.33 |
 
-  Ran 1 shell command
+**S5 is the only method whose reported paired 95% interval lies entirely below
+zero.** WER falls from 58.86% to 55.69%, a recorded delta of -3.18 percentage
+points, approximately **5.4% relative error reduction**. These are
+utterance-level paired bootstrap estimates (2,000 resamples, seed 0), not
+evidence of robustness across classrooms or new subjects.
 
-⏺ Background command "Wait for Parakeet result" completed (exit code 0)
+S8 has the lowest keyword error, 20.48%, but its overall-WER interval includes
+zero. S9 and S10 reduce keyword error but have worse overall WER, with repetition
+runaways reported in three and two outputs respectively. S7 emits the same test
+hypotheses as S0. S2 improves tuning WER but worsens TEST WER; S6 also worsens the
+recorded point estimate. These outcomes do not support deploying every method.
 
-All five models done. Parakeet behaves exactly as its language coverage predicts — and produces a genuinely interesting artifact.
+S5's reported research RTF is **1.36**, versus **0.29** for S0; lower is faster.
+The accuracy improvement has a decoding-cost tradeoff. The dump's informal
+wall-clock account and saved per-stage training times measure different
+intervals. See the [detailed report](research/sgcd/out/fyrp/results.md).
 
-┌────────────────────────┬───────┬──────────┬───────┬─────────┬─────────┬──────────────┬───────┬────────┬─────────┐
-│         Model          │ WER % │ WER-sa % │ CER % │ K-WER % │ U-WER % │ script fid % │  RTF  │ speed  │   RAM   │
-├────────────────────────┼───────┼──────────┼───────┼─────────┼─────────┼──────────────┼───────┼────────┼─────────┤
-│ Qwen3-ASR-0.6B         │ 59.74 │ 50.39    │ 50.49 │ 44.66   │ 39.92   │ 47.2         │ 0.339 │ 2.95×  │ 1.41 GB │
-├────────────────────────┼───────┼──────────┼───────┼─────────┼─────────┼──────────────┼───────┼────────┼─────────┤
-│ Qwen3-ASR-1.7B         │ 63.24 │ 47.94    │ 57.26 │ 92.23   │ 39.45   │ 8.4          │ 1.209 │ 0.83×  │ 1.26 GB │
-├────────────────────────┼───────┼──────────┼───────┼─────────┼─────────┼──────────────┼───────┼────────┼─────────┤
-│ Whisper large-v3       │ 74.17 │ 61.94    │ 62.39 │ 63.59   │ 42.63   │ 34.4         │ 0.761 │ 1.31×  │ 0.61 GB │
-├────────
-REF:  यह कार्य गतिविधि पर निर्भर होता है
-HYP:  mouse ko hata nahi sakthi with kakaran hair            ← pure Hindi span: noise
+## 3. Original Whisper syllabus-context experiment
 
-It nails every English token and phonetically hallucinates the Devanagari spans into Latin gibberish. K-WER only counts syllabus keywords, which are ~all English — so an English-only model wins that column by construction. Do not read that 37.86% as Parakeet being good here. Its 91.54% U-WER is the honest number.
+This table is for **100 concatenated spans averaging 26.2 seconds**, not the
+short-utterance benchmark.
 
-★ Insight ─────────────────────────────────────
-- This is why the K-WER/U-WER split matters more than corpus WER. A single aggregate would have hidden that Parakeet's errors are perfectly segregated by language, while Whisper's are diffuse. Different failures need different fixes.
-- 13.18× realtime is 3× faster than turbo and 17× faster than Qwen 1.7B. RNNT is a streaming transducer — no autoregressive attention over a decoder LM, no 30-second padded windows. Whisper burns compute padding a 5.75 s utterance to 30 s; Parakeet processes only the audio present.
-- Parakeet's high script fidelity is an artifact of never having another script available. It scores 58.8% because it can't emit Devanagari — a model with only one output alphabet trivially wins an alphabet-agreement metric. Metrics have preconditions.
-  ─────────────────────────────────────────────────
+| Condition | WER % | K-WER % | U-WER % |
+| --- | ---: | ---: | ---: |
+| C0: no context | 43.46 | 48.04 | 34.64 |
+| C2: terminology list | 62.86 | 23.00 | 46.42 |
+| C3: whole-syllabus narration | 37.23 | 21.38 | 32.42 |
 
-Language-hint ablation on both Qwen models running now (~25 min) — that decides whether the 1.7B's real accuracy is being masked.
+Whole-syllabus narration reduces WER by **6.23 percentage points**, reported
+paired 95% CI **[-10.59, -1.97]**. Retrieved narration (C4) records **38.64% WER**,
+a different condition from the whole-syllabus result.
 
-  Ran 1 shell command
+A terminology list improves keyword matching but harms the rest of the
+transcription. Narration avoids that tradeoff in this experiment. A mismatched
+syllabus reproduces roughly **81% of the retrieved-narration gain**, supporting
+a substantial format/register effect rather than proving semantic correction
+from the correct syllabus.
 
+On short utterances, C3 records 99.35% WER against C0's 85.69%. The long-span
+finding is not a universal prompting gain or a measured Qwen result. See the
+[original comparison](research/sgcd/COMPARISON.md) for settings and controls.
 
-Three results that need the caveat attached:
+## 4. Current application
 
-1. The 1.7B is the best recognizer but the wrong-alphabet writer. Forced to Hindi it transliterates English terms into Devanagari — "वन इंडेक्स वन" for "one index one". That's why its K-WER is 92% and script fidelity 8.4%, while its WER-sa (47.94) and U-WER (39.45) are the best in the table. It hears the most; it writes it in the script SLR104 doesn't use. Possibly fixable with auto-detect instead of a forced hint — that ablation script is written (run_lang_variants.sh) but the run got interrupted, so it's untested.
-2. Parakeet's "best K-WER" and "best script fidelity" are artifacts, not quality. It's English-only, and no Parakeet supports Hindi. K-WER counts syllabus keywords, which are ~all English; script fidelity rewards a model that physically cannot emit Devanagari. Its real number is U-WER 91.54%.
-3. Turbo vs large-v3: +6.1 WER for 3.3× the throughput. Scaling within Whisper buys 6 points; switching family buys 14.
+The backend defaults to **Qwen3-ASR-0.6B with S5**: five beam candidates, a frozen
+token-trigram LM, weight 0.2, and word-length bonus 0.5. S5, greedy baseline, and
+syllabus-conditioned SGCD are separate selections. Serving uses roughly
+25-second spans and a 512-token cap; FYRP used short utterances and a 200-token cap.
 
-For ClassScribe: your backend is currently Whisper turbo at 80.23 WER. Moving to Qwen3-ASR-0.6B is worth ~20 WER points at comparable speed. Qwen exposes a prompt= context slot, so your SGCD syllabus-grounding method transfers in principle — but every SGCD number is Whisper-initial_prompt-specific and would need re-running.
+The LM artifact records provenance and tokenizer identity; jobs retain its
+SHA-256. Serving S5's comparison transcript is the unrescored top beam, not a
+separate S0 greedy result. See the [artifact contract](backend/assets/README.md).
 
-Absolute WERs are inflated by the 2–28 s segmentation (your testcat run shows baseline roughly halving on 26 s spans). Rankings hold; levels don't.
+Structured notes, unit-linked coverage, cited chat, and Studio revision outputs
+are implemented. Their existence does not measure note fidelity, learning
+gains, coverage correctness, or citation accuracy.
 
-Written up in research/sgcd/RUNLOG.md (appended, per the repo's discipline). New code: src/bench_asr.py, src/bench_report.py, run_bench_all.sh; table at out/tables/bench__test.md.
+## 5. Supporting material reviewed
 
-Two things I can do next — say which: finish the interrupted language-hint ablation (~25 min, decides whether the 1.7B actually beats the 0.6B), or publish this as a shareable report page for your FYP writeup.
+| Material | Contribution and limit |
+| --- | --- |
+| [Methods report](dump/all-10-methods-ran-on-qwen3-asr-06b.txt) | Historical FYRP setup and outcomes. Damaged table text and conversational fragments make saved JSON the numerical authority. |
+| [Benchmark image](dump/image.png) | Corroborates the saved five-model result; not another experiment. |
+| [Methods image](<dump/WhatsApp Image 2026-10-01 at 23.30.27.jpeg>) and [setup image](<dump/WhatsApp Image 2026-10-01 at 23.30.28.jpeg>) | Corroborate methods and reduced training scope for limited memory. Suggested reruns remain untested. |
+| [Course-chat screenshot](<dump/image (1).png>) and [subject-library screenshot](<dump/image (2).png>) | Show subject organisation, mixed source types, and cited answers, not measured answer quality. |
+| [Demonstration video](<dump/WhatsApp Video 2026-10-04 at 14.30.11.mp4>) | Shows a moving-average question, cited notes/transcripts, and timestamp-linked playback/navigation. Workflow evidence, not a labelled accuracy evaluation. |
+| [Literature-review workbook](dump/Lecture-Note-Taking-Literature-Review_Enriched.xlsx) | Prior-paper summaries and assessed limitations; 32 entries include one duplicate. Actual worksheet row numbers are used in the gap mapping. |
+| [Research tutorial](<dump/RE Tutorial 1.pdf>) | Original motivation and Whisper proposal. Publication years conflict with the workbook; its multi-perspective title exceeds implemented scope. |
+
+The [research overview](research/README.md) maps supported gaps and flags
+bibliography conflicts. The source PDF, workbook, images, video, historical
+run log, and experimental JSON are preserved.
+
+## 6. Outstanding evidence
+
+- Serving S5 WER on long classroom recordings and new domains, including
+  noise, accents, interruptions, and silence.
+- Human-labelled note, question, competency-statement, coverage, and citation quality.
+- Propagation of ASR errors into generated study material.
+- Student learning gains, workload reduction, and accessibility outcomes.
+- Qwen syllabus-conditioning gains and completed language-hint ablations.
+- Export/reload and stability validation of fine-tuned S7-S10 variants.
+- Student/tutor perspective-conditioned summarisation, continuous live capture,
+  and public multi-user deployment.
+
+See [replication](research/REPLICATION.md) and
+[implementation status](backend/IMPLEMENTATION_STATUS.md).

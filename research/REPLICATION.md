@@ -1,9 +1,12 @@
 # Replication guide
 
-How to reproduce the three-way comparison table in `sgcd/COMPARISON.md` from
-scratch, and how to check that what you got matches what we report.
+Sections 0-8 reproduce the original Whisper comparison in `sgcd/COMPARISON.md`.
+Sections 9-10 cover the later five-model benchmark and ten-method Qwen study.
+See [results](../results.md) for the separate evaluation samples.
 
-Everything runs on one laptop. No training, no GPU cluster, no API keys.
+The original Whisper study requires no training or model API keys. Later FYRP
+includes training variants. All studies target one laptop; their runtimes and
+dependencies differ from the application.
 
 ---
 
@@ -42,7 +45,9 @@ Use `../.venv/bin/python` so the virtual environment is used without activating 
 ## 2. Get the corpus
 
 MUCS 2021 subtask-2 Hindi–English, OpenSLR SLR104, CC BY-SA 4.0.
-**Test tarball only** — the training split is never used.
+**Test tarball only** — the official training tarball is never used. The
+internal DEV/TEST partition of this tarball is used below; FYRP later trains
+on its internal DEV lectures.
 
 ```bash
 mkdir -p ../data && cd ../data
@@ -244,3 +249,139 @@ Reproduce the rest of the study, all cached and scored the same way:
 
 Condition definitions are in `PREREGISTRATION.md`; every run and every number is
 recorded in `RUNLOG.md`, including the hypotheses that failed.
+
+---
+
+## 9. Five-model baseline benchmark
+
+This checkout contains saved benchmark metrics but not the Qwen or Parakeet
+hypothesis caches. Original Whisper hypotheses are available. Recreating all
+five model outputs is necessary to independently rescore the later benchmark;
+the saved metrics alone are not a fresh reproduction.
+
+Use the same frozen manifest, normalisation, and lecture split from sections
+2-4. The recorded test subset has 150 utterances and 862 seconds of audio.
+The benchmark ran one model per process on an M3 Air with 8 GB unified memory.
+
+The original Whisper-only installation is insufficient for all later methods:
+
+| Capability | Additional environment requirement |
+| --- | --- |
+| Qwen decoding/training | Torch and Transformers with the Qwen processor/model APIs used by the historical scripts; checkpoint weights |
+| Script-tolerant scoring | indic-transliteration, already included in section 1 |
+| FYRP text correction | rapidfuzz |
+| Parakeet checkpoint | parakeet-mlx on Apple silicon |
+| Driver downloads | Hugging Face CLI; the driver sets an HF transfer option, which may require its corresponding transport dependency |
+
+The serving dependencies are documented in [backend requirements](../backend/requirements.txt)
+and [optional ASR requirements](../backend/requirements-asr-extra.txt), but those
+are not an exact lockfile for the historical experiments. Verify the APIs used
+in the research scripts when recreating an environment. No fully pinned
+historical research environment is supplied.
+
+From the repository root, with the research virtual environment prepared:
+
+~~~bash
+cd research/sgcd/src
+../.venv/bin/python bench_asr.py --model qwen06 --split test
+../.venv/bin/python bench_asr.py --model qwen17 --split test
+../.venv/bin/python bench_asr.py --model wlv3 --split test
+../.venv/bin/python bench_asr.py --model turbo --split test
+../.venv/bin/python bench_asr.py --model parakeet --split test
+../.venv/bin/python bench_report.py --split test
+~~~
+
+These are sequential commands. Qwen defaults to the forced Hindi hint; Whisper
+uses its frozen Hindi C0 settings; Parakeet is English-only. Caches are stored
+under out/hyps with model-specific C0 names and runtime JSON under out/.
+
+The convenience driver can also be run from the repository root:
+
+~~~bash
+bash research/sgcd/run_bench_all.sh
+~~~
+
+**Driver limitation:** it loops over turbo, wlv3, qwen17, and parakeet, assuming
+qwen06 was already decoded. Run the explicit qwen06 command above before using
+the driver for a complete five-model report. A missing cache otherwise produces
+a report with fewer models. This documentation update does not change the driver.
+
+Expected strict WER values, in model order qwen06, qwen17, wlv3, turbo, parakeet:
+**59.74, 63.24, 74.17, 80.23, 97.45%**. Verify all five rows, sample counts, and
+language settings against [saved JSON](sgcd/out/bench_scores__test.json) and the
+[benchmark table](sgcd/out/tables/bench__test.md). Report regeneration rescores
+cached hypotheses; it does not establish a fresh decode or runtime measurement.
+
+The original SGCD turbo C0 is 85.69%, unlike the later benchmark's 80.23%.
+Keep the experiment-specific baselines; the reviewed sources do not resolve
+the exact cause of that difference. The original comparison verifier does not
+validate this later benchmark.
+
+## 10. FYRP: ten independent Qwen methods
+
+The saved results and training metadata are present, but the FYRP hypothesis
+directory is absent in this checkout. The commands below therefore require
+decoding and training to recreate those outputs; do not assume a cached rerun.
+
+The experiment uses 50 TEST utterances (every third of the frozen 150), 30 DEV
+tuning utterances, and 100 real training examples from internal DEV lectures.
+The glossary and LM text exclude tuning references. The training pool excludes
+the 60-utterance DEV evaluation subset. No TEST reference trains the recogniser.
+
+Preparation generates up to 120 TTS examples using macOS's Hindi voice Lekha;
+the training variants use the first 80. Full S8-S10 reproduction therefore
+requires macOS, that voice, and sufficient memory. Missing hypotheses for
+trained variants cannot be rebuilt from exported trained weights: the current
+scripts do not export those weights.
+
+From the repository root:
+
+~~~bash
+bash research/sgcd/run_fyrp.sh
+~~~
+
+Or run stages individually, from research/sgcd/src:
+
+~~~bash
+../.venv/bin/python fyrp_exp.py prep
+../.venv/bin/python fyrp_exp.py decode
+../.venv/bin/python fyrp_exp.py train --method emb
+../.venv/bin/python fyrp_exp.py train --method tts
+../.venv/bin/python fyrp_exp.py train --method partial
+../.venv/bin/python fyrp_exp.py train --method lora
+../.venv/bin/python fyrp_exp.py report
+~~~
+
+Decode produces S0, S3, S5 beam candidates, and S6. Training produces S7-S10
+hypotheses; report applies the text corrections and S5 rescoring, then writes
+results.json and results.md. Caches are reused, but missing training results
+require training again. Report generation still loads the tokenizer and builds
+the LM; it is not a pure Markdown formatter.
+
+Expected output is **11 rows**, baseline plus ten independent alternatives:
+
+- S0 WER: **58.86%**.
+- S5 WER: **55.69%**, delta **-3.18 percentage points**, reported 95% CI
+  **[-6.3, -0.2]**.
+- S8 WER: **55.85%**, interval includes zero.
+- S5 is the only alternative with its reported interval entirely below zero.
+
+Check every row and its frozen settings against
+[results.json](sgcd/out/fyrp/results.json). The FYRP bootstrap uses 2,000
+utterance resamples, seed 0; original SGCD uses 10,000, seed 1337.
+The [detailed report](sgcd/out/fyrp/results.md) explains the metric and runtime
+limits. Its narrative sections are overwritten by the current generator;
+preserve/reapply that commentary after regeneration. Generator code is unchanged.
+
+## 11. Serving is a separate validation target
+
+The [application S5 artifact](../backend/assets/README.md) exports frozen LM
+counts, not trained recogniser weights. Serving uses roughly 25-second spans
+and a 512-token cap, whereas FYRP uses a 200-token cap. Its comparison output
+is an unrescored beam, not an independent S0 greedy result.
+
+Do not apply original Whisper gains to Qwen, compare absolute scores against
+unmatched literature datasets, or present research RTF as application latency.
+Long-recording WER, new-domain transfer, note fidelity, citation accuracy,
+coverage correctness, and student learning outcomes need separate evaluation.
+The demonstrations in [dump/](../dump/) establish workflows, not those metrics.

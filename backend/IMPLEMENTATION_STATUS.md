@@ -1,8 +1,13 @@
 # Implementation and research audit
 
-Audit date: 2026-10-02. Scope: complete the existing single-machine ClassScribe
+Original implementation audit: 2026-10-02. Documentation review: 2026-10-10.
+Scope: complete the existing single-machine ClassScribe
 backend and connect it to the frontend, with the best supported research baseline
 as the default. Preserve the original research experiment code and outputs.
+
+The verification results below retain their original date. The documentation
+review reconciles current code with the material in [dump/](../dump/); it does
+not represent a rerun of the historical tests or a new quality experiment.
 
 ## Why Qwen3-ASR-0.6B
 
@@ -19,12 +24,14 @@ utterances. Strict WER, lower is better:
 | Whisper large-v3-turbo | 80.23 |
 | Parakeet RNNT 1.1B | 97.45 |
 
-Qwen 1.7B has better results under some script-normalized/semantic measures; its
+Qwen 1.7B has better results under the lossy script-tolerant WER measure; its
 forced-Hindi output transliterates English technical terms. Parakeet is an
 English-only checkpoint. Therefore 0.6B is the defensible default for this
 project's dual-script Hindi–English convention, rather than choosing the largest
-checkpoint. Runtime generation is deterministic, bounded and uses a repetition
-penalty; these settings and the native HF implementation need their own quality
+checkpoint. The current default is **Qwen 0.6B with S5 domain-LM rescoring**.
+Runtime generation is deterministic and bounded. Greedy recognition uses a
+repetition penalty; S5 uses five beams and penalty 1.0 to match its research
+recipe. These settings and the native HF implementation need their own quality
 assessment and are not claimed to reproduce cached research scores exactly.
 
 The older Whisper long-span study is a different experiment: 100 concatenated
@@ -36,9 +43,15 @@ than proving syllabus-semantic correction.
 
 ## Gaps closed
 
+These are implementation gaps from the original audit. Literature-supported
+research gaps and their evidence boundaries are mapped in the
+[research overview](../research/README.md).
+
 | Previous gap | Implemented behavior |
 | --- | --- |
 | Best benchmark checkpoint absent from backend | Native Transformers Qwen3-ASR adapter; 0.6B default |
+| S5 only available in research scripts | Five-beam domain-LM rescoring is the serving default; frozen counts, tokenizer validation, and per-job SHA-256 preserve artifact identity |
+| Practice generation separate from lecture workflow | Studio quizzes, flashcards, mind maps, reports, slides, and infographics use subject/unit/recording sources and a separate generation pool |
 | Model selection hidden in environment | Capability catalog, validated per-job selection and frontend controls |
 | Every model treated as promptable Whisper | Runtime-specific Qwen/Whisper/Parakeet adapters, language/method validation |
 | Whisper turbo thresholds applied across models | Fitted safeguards restricted to turbo; generic empty/repetition checks separate |
@@ -63,7 +76,7 @@ than proving syllabus-semantic correction.
 | Old SQLite schema rejects new fields | Additive migration preserves existing lecture rows |
 | Dependency conflicts with native Qwen | Compatible pinned Transformers, sentence-transformers and Chroma versions |
 
-## Verification
+## Historical verification (2026-10-02)
 
 Verified against the completed code on this Apple-silicon Mac:
 
@@ -98,6 +111,31 @@ The Qwen adapter follows the [native Transformers processor API](https://hugging
 The optional Parakeet adapter follows [parakeet-mlx](https://github.com/senstella/parakeet-mlx);
 its [RNNT checkpoint is English-only](https://huggingface.co/nvidia/parakeet-rnnt-1.1b).
 
+## Current implementation and demonstration evidence (2026-10-10 review)
+
+- Configuration and ASR adapters implement S5 as default, with greedy baseline
+  and syllabus-conditioned SGCD as separate choices. The
+  [LM contract](assets/README.md) documents provenance and serving differences.
+- Studio generation and frontend viewers are implemented for all six output
+  kinds. Formats and source scopes are capabilities, not measured improvements
+  in question quality or student learning.
+- Research metrics and training metadata are present, but Qwen/Parakeet
+  benchmark hypotheses and the FYRP hypothesis directory are absent in this
+  checkout. Independent rescoring of those results requires recreated outputs;
+  the original Whisper comparison verifier can use its saved scores.
+- The dump screenshots show subject organisation, PDFs, documents, images,
+  recordings, and source-linked chat. Its video shows a moving-average answer,
+  cited notes/transcript passages, and timestamp-linked playback. These are
+  workflow demonstrations, not human-labelled citation or transcription tests.
+- The backend health check during this session returned status "ok", FFmpeg
+  available, Qwen 0.6B/S5 configured, and a configured Gemini credential.
+  Credential presence does not itself verify external generation quality.
+
+The original tutorial describes Whisper syllabus grounding and a
+multi-perspective project title. Current serving is Qwen/S5; Whisper context
+results do not transfer automatically, and student/tutor perspective-conditioned
+summarisation is not implemented. See [results](../results.md) for source scope.
+
 ## Research still pending
 
 1. **Classroom validation of the serving default.** Re-score bounded native Qwen
@@ -109,11 +147,13 @@ its [RNNT checkpoint is English-only](https://huggingface.co/nvidia/parakeet-rnn
 3. **Qwen syllabus conditioning.** Run long-span baseline versus matched and
    mismatched narration, retrieved narration and register controls. Do not reuse
    Whisper's safeguards or published gains without calibration.
-4. **FYRP rescoring.** The best smaller experiment is S5, 55.69% versus 58.86%
+4. **Serving validation of FYRP rescoring.** S5 is implemented and is the current
+   default. The smaller experiment reports 55.69% versus 58.86%
    baseline on 50 test utterances; paired delta -3.18 points, CI [-6.3, -0.2].
-   It uses beam hypotheses and a domain trigram LM. This promising result needs a
-   larger held-out/long-recording evaluation, an artifact/version contract and
-   runtime cost analysis before replacing the standard decoder. See
+   It uses beam hypotheses and a domain trigram LM. The artifact/version contract
+   is implemented. Larger held-out/long-recording and new-domain evaluation,
+   quality checks for the serving settings, and deployment runtime analysis
+   remain pending. The reported research RTF is 1.36 versus 0.29 for S0. See
    [`fyrp/results.md`](../research/sgcd/out/fyrp/results.md).
 5. **Trainable variants.** S7–S10 produce training metadata and hypotheses but
    the current experiment code does not export reusable trained checkpoint
@@ -127,10 +167,11 @@ its [RNNT checkpoint is English-only](https://huggingface.co/nvidia/parakeet-rnn
 
 ## Deployment/configuration still pending
 
-- Set a valid Gemini credential to verify real generated notes, syllabus rewriting,
-  composed chat and image OCR. No credential is present in the backend setup used
-  for verification; those external calls are tested with stubs. Transcription and
-  extractive source chat are local.
+- The original audit lacked a Gemini credential; that remains the scope of its
+  stubbed checks. The current health check reports a configured credential, and
+  the dump demonstrates generated content, but systematic quality evaluation of
+  notes, syllabus rewriting, composed chat, image extraction, and Studio output
+  is still pending. Transcription and extractive source chat are local.
 - Scanned PDF text extraction still requires OCR preprocessing. Image OCR is a
   Gemini integration, not an offline OCR model.
 - Authentication, per-user authorization, an external queue and production schema
