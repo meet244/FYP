@@ -13,6 +13,9 @@ from app.llm.client import LLMRateLimited, LLMUnavailable
 from app.models import ChatMessage, ChatSession, Subject, Syllabus, Lecture
 from app.rag.answer import answer_question
 from app.schemas import ChatMessageOut, ChatRequest, ChatResponse
+from app.studio import generators as studio_generators
+from app.studio import intent as studio_intent
+from app.studio import runner as studio_runner
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +44,11 @@ def chat(subject_id: str, body: ChatRequest, db: Session = Depends(get_db)) -> C
             raise HTTPException(404, "chat session not found for this subject")
     else:
         session = ChatSession(id=uuid.uuid4().hex, subject_id=subject_id, title=body.question[:120])
+
+    units = list(subject.syllabus.units) if subject.syllabus else []
+    intent = studio_intent.detect(body.question, units, list(subject.lectures))
+    if intent is not None:
+        return _studio_reply(db, subject_id, session, body, intent)
 
     history = [
         {"role": m.role, "content": m.content}
@@ -88,6 +96,47 @@ def chat(subject_id: str, body: ChatRequest, db: Session = Depends(get_db)) -> C
         answer=result.text,
         query_type=result.query_type,
         citations=result.citations,
+    )
+
+
+def _studio_reply(
+    db: Session,
+    subject_id: str,
+    session: ChatSession,
+    body: ChatRequest,
+    intent: studio_intent.StudioIntent,
+) -> ChatResponse:
+    """Queue the requested item and answer with a pointer the chat renders as a live card."""
+    item = studio_runner.create(db, subject_id, intent.kind, intent.scope, intent.options)
+    noun = studio_generators.LABELS[intent.kind].lower()
+    if intent.kind == "report":
+        noun = studio_generators.REPORT_FORMATS[intent.options["format"]][0].lower()
+    text = (
+        f"Generating a {noun} from **{item.scope['label']}**. It appears here when "
+        "it is ready, and stays saved under Studio."
+    )
+    if session not in db:
+        db.add(session)
+        db.flush()
+    session.updated_at = dt.datetime.now(dt.timezone.utc)
+    db.add(ChatMessage(session_id=session.id, role="user", content=body.question))
+    db.add(
+        ChatMessage(
+            session_id=session.id,
+            role="assistant",
+            content=text,
+            query_type="studio",
+            studio_item_id=item.id,
+        )
+    )
+    db.commit()
+    studio_runner.submit(item.id)
+    return ChatResponse(
+        session_id=session.id,
+        answer=text,
+        query_type="studio",
+        citations=[],
+        studio_item_id=item.id,
     )
 
 

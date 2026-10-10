@@ -21,7 +21,10 @@ from app.config import settings
 log = logging.getLogger(__name__)
 
 # Free-tier RPD is per model. 3.6 Flash is 20/day; 3.1 Flash Lite is 500/day.
+# The primary (settings.llm_model, default 3.5 Flash) is tried first; when its
+# quota runs out, requests fall through to the higher-quota Lite models.
 _FALLBACK_MODELS = (
+    "gemini-3.5-flash",
     "gemini-3.1-flash-lite",
     "gemini-3.5-flash-lite",
     "gemini-3.7-flash",
@@ -107,6 +110,10 @@ def _reraise_auth(exc: BaseException) -> None:
 
 
 def _generate(contents: Any, config: types.GenerateContentConfig) -> Any:
+    return _generate_with_model(contents, config)[0]
+
+
+def _generate_with_model(contents: Any, config: types.GenerateContentConfig) -> tuple[Any, str]:
     last: BaseException | None = None
     for model in candidate_models():
         try:
@@ -117,7 +124,7 @@ def _generate(contents: Any, config: types.GenerateContentConfig) -> Any:
             )
             if model != settings.llm_model:
                 log.info("Gemini served by %s (primary %s unavailable)", model, settings.llm_model)
-            return response
+            return response, model
         except genai_errors.APIError as exc:
             _reraise_auth(exc)
             code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
@@ -187,3 +194,21 @@ def complete_json(
     if not text:
         raise RuntimeError("model returned an empty JSON response")
     return json.loads(text)
+
+
+def complete_json_with_model(
+    system: str,
+    user: str,
+    schema: dict[str, Any],
+    *,
+    max_tokens: int = 16_000,
+) -> tuple[Any, str]:
+    """Like `complete_json`, but also names the model that served the request."""
+    response, model = _generate_with_model(
+        user,
+        _config(system, max_tokens=max_tokens, schema=schema),
+    )
+    text = (response.text or "").strip()
+    if not text:
+        raise RuntimeError("model returned an empty JSON response")
+    return json.loads(text), model

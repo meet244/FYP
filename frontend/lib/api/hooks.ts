@@ -5,7 +5,7 @@ import useSWR, { mutate as globalMutate } from 'swr'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import * as api from './client'
-import type { Job, JobKind } from './types'
+import type { Job, JobKind, StudioItem } from './types'
 
 // Keys are the API paths, so a mutation can invalidate by path prefix.
 export const keys = {
@@ -23,6 +23,8 @@ export const keys = {
   materials: (id: string) => `/subjects/${id}/materials`,
   material: (id: string) => `/materials/${id}`,
   runs: (id: string) => `/lectures/${id}/runs`,
+  studio: (id: string) => `/subjects/${id}/studio`,
+  studioItem: (id: string) => `/studio/${id}`,
 }
 
 export const useASRModels = () => useSWR('/asr/models', api.getASRModels)
@@ -66,6 +68,19 @@ export const useMaterials = (id: string | null) =>
 
 export const useSessionMessages = (id: string | null) =>
   useSWR(id ? keys.session(id) : null, () => api.getSession(id!))
+
+const generating = (item: StudioItem) => item.status === 'pending' || item.status === 'running'
+
+/** Polls only while something is still generating. */
+export const useStudioItems = (subjectId: string | null) =>
+  useSWR(subjectId ? keys.studio(subjectId) : null, () => api.listStudioItems(subjectId!), {
+    refreshInterval: (items) => (items?.some(generating) ? 2_000 : 0),
+  })
+
+export const useStudioItem = (id: string | null) =>
+  useSWR(id ? keys.studioItem(id) : null, () => api.getStudioItem(id!), {
+    refreshInterval: (item) => (item && generating(item) ? 2_000 : 0),
+  })
 
 /**
  * Track background jobs to completion.

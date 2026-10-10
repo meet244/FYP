@@ -61,8 +61,16 @@ class Settings(BaseSettings):
             "CLASSSCRIBE_GEMINI_API_KEY",
         ),
     )
-    llm_model: str = "gemini-3.1-flash-lite"
+    llm_model: str = "gemini-3.5-flash"
     llm_effort: str = "high"
+
+    # --- studio (quiz, flashcards, mind map, ...) ---
+    # Generation runs on its own small pool so a quiz never queues behind a
+    # minutes-long transcription on the single ASR worker.
+    studio_workers: int = Field(default=2, ge=1, le=4)
+    # Source text budget per generation. Flash has a large context window; this
+    # bounds latency and cost rather than fitting a hard limit.
+    studio_context_chars: int = Field(default=120_000, ge=10_000, le=600_000)
 
     # --- jobs ---
     worker_threads: int = Field(default=1, ge=1, le=4)

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { PanelLeft, Upload, X } from 'lucide-react'
+import { PanelLeft, Upload, WandSparkles, X } from 'lucide-react'
 
 import { StudioSidebar } from '@/components/studio-sidebar'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,7 @@ export function StudioShell({
   selectedSessionId,
   onOpenSource,
   right,
+  rightLabel = 'Studio',
   children,
 }: {
   subjectId?: string | null
@@ -35,9 +36,12 @@ export function StudioShell({
   selectedSessionId?: string | null
   onOpenSource?: (source: SourceSelection) => void
   right?: React.ReactNode
+  /** Names the button that opens `right` as a slide-over below the xl breakpoint. */
+  rightLabel?: string
   children: React.ReactNode
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [rightOpen, setRightOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [dragging, setDragging] = useState(false)
   const dragDepth = useRef(0)
@@ -181,12 +185,22 @@ export function StudioShell({
               </>
             ) : null}
           </div>
+          {right && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 xl:hidden"
+              onClick={() => setRightOpen(true)}
+            >
+              <WandSparkles className="h-3.5 w-3.5" /> {rightLabel}
+            </Button>
+          )}
         </div>
 
         <div
           className={cn(
             'grid min-h-0 flex-1',
-            right ? 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_252px]' : 'grid-cols-1'
+            right ? 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px]' : 'grid-cols-1'
           )}
         >
           <section className="relative flex min-h-0 min-w-0 flex-col overflow-hidden bg-card">
@@ -199,6 +213,27 @@ export function StudioShell({
           )}
         </div>
       </div>
+      {right && rightOpen && (
+        <div className="fixed inset-0 z-50 xl:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-foreground/20"
+            aria-label={`Close ${rightLabel}`}
+            onClick={() => setRightOpen(false)}
+          />
+          <aside className="absolute inset-y-0 right-0 flex w-[min(320px,92vw)] flex-col border-l border-border bg-background">
+            <button
+              type="button"
+              className="absolute right-2 top-2 z-10 p-1 text-muted-foreground"
+              onClick={() => setRightOpen(false)}
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {right}
+          </aside>
+        </div>
+      )}
       {dragging && (
         <div className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center border-2 border-dashed border-primary bg-background/90 p-6" role="status" aria-live="polite">
           <div className="max-w-md text-center">

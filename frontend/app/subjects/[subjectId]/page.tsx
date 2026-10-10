@@ -8,6 +8,8 @@ import { JobList } from '@/components/job-progress'
 import { ProcessingStatus } from '@/components/processing-stage'
 import { StudioShell } from '@/components/studio-shell'
 import { SourceViewer, type SourceSelection } from '@/components/source-viewer'
+import { StudioPanel } from '@/components/studio/studio-panel'
+import { StudioViewer } from '@/components/studio/studio-viewer'
 import { Skeleton } from '@/components/ui/skeleton'
 import { revalidateAfterJob, useJobTracker, useSubject } from '@/lib/api/hooks'
 
@@ -26,6 +28,7 @@ function SubjectView({ subjectId }: { subjectId: string }) {
   const [chatReset, setChatReset] = useState(0)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [source, setSource] = useState<SourceSelection | null>(null)
+  const [studioItem, setStudioItem] = useState<string | null>(null)
 
   if (error) {
     return (
@@ -49,6 +52,7 @@ function SubjectView({ subjectId }: { subjectId: string }) {
       selectedSessionId={sessionId}
       onSelectChat={setSessionId}
       onOpenSource={setSource}
+      right={<StudioPanel subjectId={subjectId} onOpen={setStudioItem} />}
     >
       <JobList jobs={jobs} onDismiss={dismiss} onQueued={track} />
       <ProcessingStatus jobs={jobs} />
@@ -60,7 +64,9 @@ function SubjectView({ subjectId }: { subjectId: string }) {
         selectedSessionId={sessionId}
         onSessionChange={setSessionId}
         onOpenSource={setSource}
+        onOpenStudio={setStudioItem}
       />
+      <StudioViewer itemId={studioItem} onClose={() => setStudioItem(null)} onOpenSource={setSource} />
       <SourceViewer source={source} subjectId={subjectId} onClose={() => setSource(null)} />
     </StudioShell>
   )

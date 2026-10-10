@@ -91,6 +91,19 @@ not keyword lists. Short-span conditioning regressed in the original study.
 | `GET /subjects/{id}/chat/sessions`; `GET,DELETE /chat/sessions/{id}` | Persistent conversation history |
 | `GET /jobs`; `GET /jobs/{id}` | Durable status, stage, progress and errors |
 | `POST /jobs/{id}/cancel`, `/retry` | Cancel at a safe stage boundary / retry failed or cancelled job |
+| `POST,GET /subjects/{id}/studio` | Generate / list Studio items (quiz, flashcards, mind map, report, slides, infographic) |
+| `GET,DELETE /studio/{id}`; `POST /studio/{id}/retry` | Poll an item until `ready` or `failed` / remove / regenerate |
+
+### Studio
+
+A Studio item is generated from a scope: the whole subject, one syllabus unit,
+or one recording. Unit scope uses the notes and transcript spans already
+attributed to that unit, plus readings found by vector search. Each kind is one
+schema-constrained Gemini call over numbered sources, so questions, cards,
+slides and mind-map branches cite the lecture moment or page they came from.
+Generation runs on a separate pool (`CLASSSCRIBE_STUDIO_WORKERS`, default 2), so
+it never waits behind transcription. Chat messages such as "make a quiz on unit
+2" create the same item and return `studio_item_id`.
 
 Long operations return `202`. Poll jobs until `succeeded`, `failed`, or
 `cancelled`. Running cancellation first reports `cancelling`; the current model

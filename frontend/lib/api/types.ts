@@ -247,6 +247,7 @@ export type QueryType =
   | 'outline'
   | 'coverage'
   | 'smalltalk'
+  | 'studio'
 
 export interface Citation {
   n: number
@@ -275,6 +276,7 @@ export interface ChatResponse {
   answer: string
   query_type: QueryType
   citations: Citation[]
+  studio_item_id?: string | null
 }
 
 export interface ChatMessage {
@@ -283,6 +285,7 @@ export interface ChatMessage {
   content: string
   query_type: QueryType | null
   citations: Citation[] | null
+  studio_item_id?: string | null
   created_at: string
 }
 
@@ -328,4 +331,110 @@ export interface Health {
   llm_model: string
   llm_configured: boolean
   asr_default: ASRConfig
+}
+
+// --- studio ---
+/** `app/studio/generators.py` KINDS. */
+export type StudioKind = 'quiz' | 'flashcards' | 'mindmap' | 'report' | 'slides' | 'infographic'
+export type StudioStatus = 'pending' | 'running' | 'ready' | 'failed'
+export type ReportFormat = 'study_guide' | 'briefing' | 'faq' | 'glossary'
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed'
+
+export interface StudioScope {
+  type: 'subject' | 'unit' | 'lecture'
+  id: string | null
+  label?: string
+}
+
+export interface StudioOptions {
+  count?: number | null
+  difficulty?: Difficulty | null
+  format?: ReportFormat | null
+  focus?: string | null
+}
+
+export interface QuizContent {
+  title: string
+  questions: {
+    question: string
+    options: string[]
+    answer_index: number
+    explanation: string
+    hint: string | null
+    difficulty: 'easy' | 'medium' | 'hard' | null
+    sources: number[]
+  }[]
+}
+
+export interface FlashcardsContent {
+  title: string
+  cards: { front: string; back: string; sources: number[] }[]
+}
+
+export interface MindNode {
+  id: string
+  label: string
+  summary: string | null
+  sources: number[]
+  children: MindNode[]
+}
+
+export interface MindmapContent {
+  title: string
+  root: MindNode
+}
+
+export interface ReportContent {
+  title: string
+  markdown: string
+}
+
+export interface SlidesContent {
+  title: string
+  subtitle: string | null
+  slides: { title: string; bullets: string[]; speaker_notes: string | null; sources: number[] }[]
+}
+
+export type InfographicIcon =
+  | 'lightbulb' | 'gear' | 'chart' | 'book' | 'target' | 'layers'
+  | 'network' | 'warning' | 'check' | 'clock' | 'cpu' | 'function'
+
+export interface InfographicContent {
+  title: string
+  subtitle: string | null
+  stats: { value: string; label: string; sources: number[] }[]
+  sections: { heading: string; icon: InfographicIcon; points: string[]; sources: number[] }[]
+  process: { title: string; steps: string[] } | null
+  takeaway: string | null
+}
+
+export interface StudioContentMap {
+  quiz: QuizContent
+  flashcards: FlashcardsContent
+  mindmap: MindmapContent
+  report: ReportContent
+  slides: SlidesContent
+  infographic: InfographicContent
+}
+
+export interface StudioItem {
+  id: string
+  subject_id: string
+  kind: StudioKind
+  title: string
+  scope: StudioScope
+  options: StudioOptions
+  status: StudioStatus
+  content: StudioContentMap[StudioKind] | null
+  citations: Citation[] | null
+  model: string | null
+  error: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface StudioCreate {
+  kind: StudioKind
+  scope: { type: StudioScope['type']; id: string | null }
+  options: StudioOptions
 }

@@ -25,6 +25,8 @@ import type {
   ASROptions,
   TranscriptionRun,
   Span,
+  StudioCreate,
+  StudioItem,
 } from './types'
 
 export const API_BASE =
@@ -168,6 +170,17 @@ export const getSession = (sessionId: string) =>
   req<ChatMessage[]>(`/chat/sessions/${sessionId}`)
 export const deleteSession = (sessionId: string) =>
   req<void>(`/chat/sessions/${sessionId}`, { method: 'DELETE' })
+
+// --- studio ---
+export const listStudioItems = (subjectId: string) =>
+  req<StudioItem[]>(`/subjects/${subjectId}/studio`)
+export const getStudioItem = (id: string) => req<StudioItem>(`/studio/${id}`)
+export const createStudioItem = (subjectId: string, body: StudioCreate) =>
+  req<StudioItem>(`/subjects/${subjectId}/studio`, { method: 'POST', body: JSON.stringify(body) })
+export const retryStudioItem = (id: string) =>
+  req<StudioItem>(`/studio/${id}/retry`, { method: 'POST' })
+export const deleteStudioItem = (id: string) =>
+  req<void>(`/studio/${id}`, { method: 'DELETE' })
 
 // --- jobs ---
 export const getJob = (id: string) => req<Job>(`/jobs/${id}`)

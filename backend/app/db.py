@@ -58,3 +58,6 @@ def init_db() -> None:
         for name, kind in (("source_path", "VARCHAR(1024)"), ("asr_config", "JSON"), ("summary", "TEXT")):
             if name not in columns:
                 conn.execute(text(f"ALTER TABLE lectures ADD COLUMN {name} {kind}"))
+        chat_columns = {c["name"] for c in inspect(conn).get_columns("chat_messages")}
+        if "studio_item_id" not in chat_columns:
+            conn.execute(text("ALTER TABLE chat_messages ADD COLUMN studio_item_id VARCHAR(32)"))

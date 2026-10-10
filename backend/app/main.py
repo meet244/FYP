@@ -11,13 +11,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import asr, chat, jobs, lectures, materials, subjects
+from app.api import asr, chat, jobs, lectures, materials, studio, subjects
 from app.config import settings
 from app.asr.catalog import resolve_options
 from app.db import init_db
 from app.ingest.audio import ffmpeg_available
 from app.jobs import handlers  # noqa: F401 — registers job handlers
 from app.jobs import queue
+from app.studio import runner as studio_runner
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,6 +31,8 @@ log = logging.getLogger("classscribe")
 async def lifespan(app: FastAPI):
     init_db()
     queue.start()
+    if n := studio_runner.requeue_unfinished():
+        log.info("requeued %d unfinished studio item(s)", n)
     if not ffmpeg_available():
         log.warning("ffmpeg not found on PATH — lecture uploads will fail until it is installed")
     log.info(
@@ -42,6 +45,7 @@ async def lifespan(app: FastAPI):
         settings.llm_model,
     )
     yield
+    studio_runner.shutdown()
     queue.stop()
 
 
@@ -70,6 +74,7 @@ app.include_router(materials.router)
 app.include_router(chat.router)
 app.include_router(jobs.router)
 app.include_router(asr.router)
+app.include_router(studio.router)
 
 
 @app.get("/health", tags=["meta"])

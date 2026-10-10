@@ -11,6 +11,7 @@ import {
   PieChart,
   Search,
   Sparkles,
+  WandSparkles,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Markdown } from '@/components/markdown'
 import { SgcdMachine } from '@/components/processing-stage'
+import { StudioChatCard } from '@/components/studio/studio-chat-card'
 import type { SourceSelection } from '@/components/source-viewer'
 import { ask } from '@/lib/api/client'
 import { keys, useSessionMessages } from '@/lib/api/hooks'
@@ -35,6 +37,7 @@ const QUERY_TYPE: Record<QueryType, { label: string; icon: React.ElementType }> 
   outline: { label: 'Outline', icon: ListTree },
   coverage: { label: 'Coverage', icon: PieChart },
   smalltalk: { label: 'Chat', icon: MessageCircle },
+  studio: { label: 'Studio', icon: WandSparkles },
 }
 
 const SUGGESTIONS = [
@@ -42,6 +45,7 @@ const SUGGESTIONS = [
   'Explain the last lecture from the recording',
   'What is on the slides or PDFs?',
   'Give me five practice questions',
+  'Make a quiz on this subject',
 ]
 
 function friendlyChatError(err: unknown): string {
@@ -158,6 +162,7 @@ export function ChatPanel({
   selectedSessionId = null,
   onSessionChange,
   onOpenSource,
+  onOpenStudio,
 }: {
   subjectId: string
   subjectName?: string
@@ -165,6 +170,7 @@ export function ChatPanel({
   selectedSessionId?: string | null
   onSessionChange?: (id: string) => void
   onOpenSource: (source: SourceSelection) => void
+  onOpenStudio?: (itemId: string) => void
 }) {
   const [sessionId, setSessionId] = useState<string | null>(selectedSessionId)
   const { data: saved, error: historyError, isLoading: historyLoading } = useSessionMessages(selectedSessionId)
@@ -231,9 +237,11 @@ export function ChatPanel({
           content: res.answer,
           query_type: res.query_type,
           citations: res.citations,
+          studio_item_id: res.studio_item_id ?? null,
           created_at: new Date().toISOString(),
         },
       ])
+      if (res.studio_item_id) void mutate(keys.studio(subjectId))
       await mutate(keys.sessions(subjectId))
       await mutate(keys.session(res.session_id))
       if (mounted.current) onSessionChange?.(res.session_id)
@@ -325,6 +333,10 @@ export function ChatPanel({
                       >
                         {m.content}
                       </Markdown>
+
+                      {m.studio_item_id && onOpenStudio && (
+                        <StudioChatCard itemId={m.studio_item_id} onOpen={onOpenStudio} />
+                      )}
 
                       {m.citations && (
                         <CitationList citations={m.citations} onOpen={openCitation} />

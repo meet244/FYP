@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -173,6 +173,7 @@ class ChatResponse(BaseModel):
     answer: str
     query_type: str
     citations: list[Citation]
+    studio_item_id: str | None = None
 
 
 class ChatMessageOut(ORM):
@@ -181,7 +182,49 @@ class ChatMessageOut(ORM):
     content: str
     query_type: str | None
     citations: list[dict[str, Any]] | None
+    studio_item_id: str | None = None
     created_at: dt.datetime
+
+
+# --- studio ---
+StudioKind = Literal["quiz", "flashcards", "mindmap", "report", "slides", "infographic"]
+
+
+class StudioScopeIn(BaseModel):
+    type: Literal["subject", "unit", "lecture"] = "subject"
+    id: str | None = None
+
+
+class StudioOptions(BaseModel):
+    # Questions / cards / slides. Ignored by kinds without a natural count.
+    count: int | None = Field(default=None, ge=3, le=40)
+    difficulty: Literal["easy", "medium", "hard", "mixed"] | None = None
+    # Report flavour.
+    format: Literal["study_guide", "briefing", "faq", "glossary"] | None = None
+    # Free-text steer, e.g. "focus on backpropagation".
+    focus: str | None = Field(default=None, max_length=500)
+
+
+class StudioCreate(BaseModel):
+    kind: StudioKind
+    scope: StudioScopeIn = StudioScopeIn()
+    options: StudioOptions = StudioOptions()
+
+
+class StudioItemOut(ORM):
+    id: str
+    subject_id: str
+    kind: str
+    title: str
+    scope: dict[str, Any]
+    options: dict[str, Any]
+    status: str
+    content: dict[str, Any] | None = None
+    citations: list[dict[str, Any]] | None = None
+    model: str | None = None
+    error: str | None = None
+    created_at: dt.datetime
+    updated_at: dt.datetime
 
 
 # --- jobs ---

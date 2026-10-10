@@ -270,5 +270,34 @@ class ChatMessage(Base, TimestampMixin):
     content: Mapped[str] = mapped_column(Text)
     query_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     citations: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    # Set when the message asked for a Studio item; the chat renders a live card.
+    studio_item_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     session: Mapped[ChatSession] = relationship(back_populates="messages")
+
+
+class StudioItem(Base, TimestampMixin):
+    """A generated study artefact: quiz, flashcards, mind map, report, slides, infographic.
+
+    Content is schema-shaped JSON per `kind` (see `app/studio/generators.py`), so
+    the frontend renders an interactive view rather than a block of Markdown.
+    """
+
+    __tablename__ = "studio_items"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    subject_id: Mapped[str] = mapped_column(
+        ForeignKey("subjects.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(32))
+    title: Mapped[str] = mapped_column(String(512))
+    # {"type": "subject" | "unit" | "lecture", "id": str | None, "label": str}
+    scope: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    # Per-kind knobs: count, difficulty, format, focus.
+    options: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    # pending -> running -> ready | failed
+    status: Mapped[str] = mapped_column(String(32), default="pending")
+    content: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    citations: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
